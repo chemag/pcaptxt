@@ -1,0 +1,23 @@
+
+Wed Aug 29 14:11:51 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* ChangeLog: Started ChangeLog
+
+Wed Aug 29 14:27:37 CET 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* Released pcaptxt 0.1
+
+Fri Aug 31 19:24:16 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* src/pcaptxt.c
+		src/snscanf.h
+		src/snscanf.c: Autoconfiscated project
+	* configure.ac, */Makefile.am, ...: Added autoconfiscation infrastructure
+
+Fri Aug 31 19:24:16 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* src/pcaptxt.c: Fixed stupid version bug
+
+Tue Sep  4 15:38:07 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* various: Finished project autoconfiscation
+	* various: Got rid of pedantic/Wall wanrings
+
+Mon Feb 25 17:11:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* src/pcaptxt.c: Fixed ip option bug
+

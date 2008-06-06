@@ -1,0 +1,25 @@
+
+all: quickintro
+
+quickintro:
+	@echo "Read me first, please"
+
+dist: distdir
+	tar chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	-chmod -R a+w $(distdir) >/dev/null 2>&1; rm -rf $(distdir)
+
+
+sync:
+	rsync -avubz -e 'ssh -i /home/chema/.ssh/id_dsa.elmer' . ~/.vimrc creolina.dnsalias.net:projects/traces/src/pcaptxt/
+
+rev-sync:
+	rsync -avubz -e 'ssh -i /home/chema/.ssh/id_dsa.elmer' creolina.dnsalias.net:projects/traces/src/pcaptxt/ /home/chema/projects/traces/src/pcaptxt/
+
+test: test-openbsd-4.0
+
+test-openbsd-4.0:
+	rsync -avubz ./ openbsd40:/home/chema/tmp/pcaptxt
+
+test-freebsd-6.2:
+	rsync -avubz ./ freebsd62:/home/chema/tmp/pcaptxt
+

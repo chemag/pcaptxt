@@ -1,0 +1,24 @@
+
+Quick Description
+
+Usage Notes
+
+Installation Notes
+	- .vimrc
+
+
+= [installation notes]
+
+	- user
+		- ./configure
+		- make && sudo make install
+
+	- package management (maintainer)
+		- re-create package
+			- autoreconf
+		- clean everything
+			- make maintainer-clean
+		- create dist
+			- ./configure
+			- make dist
+
