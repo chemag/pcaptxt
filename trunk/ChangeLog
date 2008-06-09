@@ -16,8 +16,12 @@ Fri Aug 31 19:24:16 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
 
 Tue Sep  4 15:38:07 CEST 2007  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* various: Finished project autoconfiscation
-	* various: Got rid of pedantic/Wall wanrings
+	* various: Got rid of pedantic/Wall warnings
 
 Mon Feb 25 17:11:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* src/pcaptxt.c: Fixed ip option bug
+
+Mon Jun  9 19:52:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* new: Added libhash link
+	* new: Added seq/ack calculation code
 

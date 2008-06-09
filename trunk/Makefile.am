@@ -7,8 +7,8 @@ versiondir = $(prefix)/etc
 dist_version_DATA = VERSION
 chown = @CHOWN@
 
-# aux before src so we compile the libpcap
-SUBDIRS = src
+# srclib before src so we compile libhash
+SUBDIRS = srclib src
 #SUBDIRS = src scripts doc
 
 # files we want to delete with make maintainer-clean

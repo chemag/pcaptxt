@@ -1,5 +1,4 @@
-/* $Header: snscanf.c,v 1.1 2007/02/22 15:33:31 chema Exp $ 
- *
+/*
  * Copyright (c) 2007, Jose Maria Gonzalez (chema@cs.berkeley.edu)
  * All rights reserved.
  *
@@ -29,6 +28,7 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+/* $Id$ */
 
 /*
  *  linux/lib/vsprintf.c

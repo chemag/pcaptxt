@@ -32,7 +32,7 @@ AC_LINK_IFELSE(
 	AC_DEFINE(PCAP_VERSION_STRING,,[Have a version string in libpcap]),
 	AC_MSG_RESULT(no))
 dnl ################################################
-dnl # Check whether linking to pcap works 
+dnl # Check whether linking to pcap works
 dnl ################################################
 AC_CHECK_LIB(pcap, main, , AC_MSG_ERROR([pcaptxt requires pcap.]))
 
@@ -45,10 +45,10 @@ AC_CHECK_HEADERS(memory.h netinet/in.h socket.h getopt.h)
 AC_CHECK_HEADERS(net/ethernet.h netinet/ether.h netinet/if_ether.h sys/ethernet.h,,,
 		[#include <sys/types.h>
 		#include <netinet/in.h>])
-# see if we have sin_len 
+# see if we have sin_len
 AC_CHECK_MEMBER(struct sockaddr_in.sin_len,
 	[AC_DEFINE(SIN_LEN,,[have sin_len field in sockaddr_in])],,
-	[ 
+	[
 #if HAVE_SYS_TYPES_H
 #	include <sys/types.h>
 #endif
@@ -58,7 +58,7 @@ AC_CHECK_MEMBER(struct sockaddr_in.sin_len,
 #if HAVE_NETINET_IN_H
 #	include <netinet/in.h>
 #endif
-])  
+])
 
 
 
@@ -73,8 +73,11 @@ AC_FUNC_REALLOC
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([gettimeofday inet_ntoa memchr memset strcasecmp strerror strncasecmp])
 
+AM_CONDITIONAL(USE_LIBHASH, true)
+
 #AC_CONFIG_FILES([Makefile])
 AC_OUTPUT([Makefile
+		srclib/Makefile
 		src/Makefile
 		])
 

@@ -4,8 +4,11 @@ bin_PROGRAMS=pcaptxt
 pcaptxt_SOURCES=pcaptxt.c getline.c snscanf.c version.c
 noinst_HEADERS=getline.h snscanf.h
 
-CCOPT = -W -Wall -Wno-unused -pedantic
-INCLS = -I. -I$(top_srcdir)/src -I$(srcdir) -I$(top_builddir)
+LIBHASH_DIR = ../srclib/libhash-0.1/src/.libs
+LIBHASH_INC = ../srclib/libhash-0.1/src
+
+CCOPT = -W -Wall -Wno-unused -pedantic -static
+INCLS = -I. -I$(top_srcdir)/src -I$(srcdir) -I$(top_builddir) -I$(LIBHASH_INC)
 AM_CFLAGS = $(INCLS) $(CCOPT)
 AM_CPPFLAGS = $(INCLS) $(CCOPT)
 
@@ -41,6 +44,7 @@ MOSTLYCLEANFILES = $(BIF_FUNC_H) $(BIF_FUNC_DEF) $(BIF_FUNC_INIT) \
 	$(BINPAC_H) $(BINPAC_CC) \
 	$(DISTCLEANFILES)
 
+LIBS = @LIBS@ -L$(LIBHASH_DIR) -lhash
 
 
 # test infrastructure
