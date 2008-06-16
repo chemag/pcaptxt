@@ -8,7 +8,7 @@ dist_version_DATA = VERSION
 chown = @CHOWN@
 
 # srclib before src so we compile libhash
-SUBDIRS = srclib src
+SUBDIRS = srclib src scripts
 #SUBDIRS = src scripts doc
 
 # files we want to delete with make maintainer-clean

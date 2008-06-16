@@ -25,3 +25,10 @@ Mon Jun  9 19:52:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* new: Added libhash link
 	* new: Added seq/ack calculation code
 
+Mon Jun 16 16:28:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* fix: reduced pcaptxt footprint
+	* fix: added CWR and ECN flags to TCP
+	* fix: lots of fixes
+	* new: Added scripts directory to distro
+	* new: Added pcapdiff.sh script
+

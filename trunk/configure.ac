@@ -79,6 +79,7 @@ AM_CONDITIONAL(USE_LIBHASH, true)
 AC_OUTPUT([Makefile
 		srclib/Makefile
 		src/Makefile
+		scripts/Makefile
 		])
 
 
