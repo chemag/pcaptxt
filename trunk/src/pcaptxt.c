@@ -1523,9 +1523,12 @@ int pcap_get_ip (packet_t* packet)
 	packet->ip_opts = packet->buffer + packet->l2_hlen + sizeof(struct ip);
 
 	/* check we're happy with the IP header */
-	if ( packet->ip->ip_v != 4 )
+	if (
+			/* we only know how to process IPv4 */
+			packet->ip->ip_v != 4 ||
+			/* we need a full IP header (cut options are OK) */
+			(packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen) )
 		{
-		/* we only know how to process IPv4 */
 		packet->ip = NULL;
 		packet->ip_opts = NULL;
 		(void)pcap_get_l3(packet);
@@ -1582,6 +1585,19 @@ int pcap_get_tcp (packet_t* packet)
 			packet->l3_hlen);
 	packet->tcp_opts = packet->buffer + packet->l2_hlen + packet->l3_hlen +
 			sizeof(struct tcphdr);
+
+	/* check we're happy with the TCP header */
+	if (
+			/* we need a full TCP header (cut options are OK) */
+			(packet->l2_hlen + packet->l3_hlen + sizeof(struct tcphdr)) >
+					ntohl(packet->frame.caplen) )
+		{
+		packet->tcp = NULL;
+		packet->tcp_opts = NULL;
+		(void)pcap_get_l4(packet);
+		return -1;
+		}
+
 
 	/* get TCP header length */
 	packet->l4_hlen = packet->tcp->th_off<<2;
@@ -3451,7 +3467,7 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			packet->tcp->th_ack = htonl(uvalue); break;
 		case 4:
 			packet->tcp->th_off = (uint8_t)uvalue;
-			packet->l4_hlen = packet->tcp->th_off<<2;
+			packet->l4_hlen = sizeof(struct tcphdr);
 			break;
 		case 5:
 			packet->tcp->th_x2 = (uint8_t)uvalue; break;
@@ -3470,6 +3486,7 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 					sizeof(struct tcphdr);
 			memcpy((void *)packet->tcp_opts, (void *)svalue, rlen);
 			packet->tcp_optlen = rlen;
+			packet->l4_hlen += packet->tcp_optlen;
 			break;
 		}
 
