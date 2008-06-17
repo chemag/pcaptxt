@@ -3268,6 +3268,8 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 		/* this is ip */
 		/*  ZZZ there should be a better way to get l3_proto from the L2 header */
 		packet->l3_proto = ETHERTYPE_IP;
+		/* IP length is at least this */
+		packet->l3_hlen = sizeof(struct ip);
 		}
 
 	if ( (id = look_for_string(txt_label_ip_header, lbuf)) < 0 )
@@ -3322,7 +3324,6 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			packet->ip->ip_v = (uint8_t)uvalue; break;
 		case 1:
 			packet->ip->ip_hl = (uint8_t)uvalue;
-			packet->l3_hlen = (packet->ip->ip_hl<<2);
 			break;
 		case 2:
 			packet->ip->ip_tos = (uint8_t)uvalue; break;
@@ -3355,6 +3356,8 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			packet->ip_opts = packet->buffer + packet->l2_hlen + sizeof(struct ip);
 			memcpy((void *)packet->ip_opts, (void *)svalue, rlen);
 			packet->ip_optlen = rlen;
+			/* add options to the IP header length */
+			packet->l3_hlen += packet->ip_optlen;
 			break;
 		}
 
@@ -3407,8 +3410,12 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 
 	/* point the tcp header, if necessary */
 	if ( packet->tcp == NULL )
+		{
 		packet->tcp = (struct tcphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
+		/* TCP length is at least this */
+		packet->l4_hlen = sizeof(struct tcphdr);
+		}
 
 	if ( (id = look_for_string(txt_label_tcp_header, lbuf)) < 0 )
 		{
@@ -3467,7 +3474,6 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			packet->tcp->th_ack = htonl(uvalue); break;
 		case 4:
 			packet->tcp->th_off = (uint8_t)uvalue;
-			packet->l4_hlen = sizeof(struct tcphdr);
 			break;
 		case 5:
 			packet->tcp->th_x2 = (uint8_t)uvalue; break;
@@ -3486,6 +3492,7 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 					sizeof(struct tcphdr);
 			memcpy((void *)packet->tcp_opts, (void *)svalue, rlen);
 			packet->tcp_optlen = rlen;
+			/* add options to the TCP header length */
 			packet->l4_hlen += packet->tcp_optlen;
 			break;
 		}
@@ -3504,9 +3511,10 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 	/* point the udp header, if necessary */
 	if ( packet->udp == NULL )
 		{
-		packet->l4_hlen = sizeof(struct udphdr);
 		packet->udp = (struct udphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
+		/* UDP length is exactly this */
+		packet->l4_hlen = sizeof(struct udphdr);
 		}
 
 	if ( (id = look_for_string(txt_label_udp_header, lbuf)) < 0 )
