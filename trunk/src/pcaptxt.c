@@ -196,6 +196,7 @@
 
 #define __FAVOR_BSD
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
@@ -337,10 +338,12 @@ typedef struct
 	uint8_t *l3;
 	struct ip *ip;
 	uint8_t *ip_opts;
+	struct ip6_hdr *ip6;
 	uint32_t l3_hlen;
 	uint32_t l3_len; /* actual l3_len in the packet (snaplen) */
 	uint32_t ip_optlen;
 	int ip_sum_valid; /* ip cksum validity */
+	int l4_proto;
 	/* l4 */
 	uint8_t *l4;
 	struct tcphdr *tcp;
@@ -379,6 +382,7 @@ typedef enum
 	TYPE_TWOUINTS,
 	TYPE_ETHADDR,
 	TYPE_IPADDR,
+	TYPE_IPADDR6,
 	TYPE_TCPFLAGS,
 	TYPE_INVALID
 } type_t;
@@ -390,13 +394,14 @@ typedef enum
 #define HEADER_ETHERNET 3
 #define HEADER_L3 4
 #define HEADER_IP 5
-#define HEADER_L4 6
-#define HEADER_TCP 7
-#define HEADER_UDP 8
-#define HEADER_ICMP 9
-#define HEADER_L7 10
-#define HEADER_REM 11
-#define HEADER_INIT 12
+#define HEADER_IP6 6
+#define HEADER_L4 7
+#define HEADER_TCP 8
+#define HEADER_UDP 9
+#define HEADER_ICMP 10
+#define HEADER_L7 11
+#define HEADER_REM 12
+#define HEADER_INIT 13
 
 
 char *valid_states_s[] =
@@ -407,6 +412,7 @@ char *valid_states_s[] =
 	"ethernet",
 	"l3",
 	"ip",
+	"ip6",
 	"l4",
 	"tcp",
 	"udp",
@@ -481,6 +487,18 @@ char *txt_label_ip_header[] =
 	"src",
 	"dst",
 	"options",
+	NULL
+};
+
+
+char *txt_label_ip6_header[] =
+{
+	"flow",
+	"plen",
+	"next",
+	"hops",
+	"src",
+	"dst",
 	NULL
 };
 
@@ -580,6 +598,7 @@ int pcap_get_frame (const struct pcap_pkthdr *hdr, packet_t* packet);
 int pcap_get_l2(packet_t *packet);
 int pcap_get_l3(packet_t *packet);
 int pcap_get_ip (packet_t* packet);
+int pcap_get_ip6 (packet_t* packet);
 int pcap_get_l4(packet_t *packet);
 int pcap_get_tcp (packet_t* packet);
 int pcap_get_udp (packet_t* packet);
@@ -595,6 +614,7 @@ int pcap_put_frame (char *buf, packet_t *packet);
 int pcap_put_l2 (char *buf, packet_t *packet);
 int pcap_put_l3 (char *buf, packet_t *packet);
 int pcap_put_ip (char *buf, packet_t *packet);
+int pcap_put_ip6 (char *buf, packet_t *packet);
 int pcap_put_l4 (char *buf, packet_t *packet);
 int pcap_put_tcp (char *buf, packet_t *packet);
 int pcap_put_udp (char *buf, packet_t *packet);
@@ -624,6 +644,7 @@ int txt_put_l2 (FILE *fp, packet_t* packet);
 int txt_put_ethernet (FILE *fp, packet_t* packet);
 int txt_put_l3 (FILE *fp, packet_t* packet);
 int txt_put_ip (FILE *fp, packet_t* packet);
+int txt_put_ip6 (FILE *fp, packet_t* packet);
 int txt_put_l4 (FILE *fp, packet_t* packet);
 int txt_put_tcp (FILE *fp, packet_t* packet);
 int txt_put_udp (FILE *fp, packet_t* packet);
@@ -643,6 +664,7 @@ int txt_get_l2(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_ethernet(char *lbuf, char *rbuf, packet_t *packet);
 int txt_get_l3(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet);
+int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_l4(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet);
@@ -1226,90 +1248,57 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 		}
 	pi += packet->l2_hlen;
 
-	/* get L3-L7 headers */
-	packet->l7_len = 0;
+	/* get L3 header */
 	switch ( packet->l3_proto )
 		{
-		case ETHERTYPE_IP:
+		case ETH_P_IP:
 			/* get IP header */
-			if ( pcap_get_ip(packet) < 0 )
-				/* invalid IP packet */
-				break;
-			pi += packet->l3_hlen;
+			(void) pcap_get_ip(packet);
+			break;
 
-			/*
-			 * \note On IP fragments, the IP length field actually states the 
-			 *       size of the fragment, not the size of the full packet. 
-			 *       ("[When fragmenting] a long internet datagram [...] [into] 
-			 *       two new internet datagrams [...] [the] first portion of the 
-			 *       data is placed in the first new internet datagram, and the 
-			 *       total length field is set to the length of the first 
-			 *       datagram." [See RFC 791, Section 2.3, Page 8])
-			 *
-			 *       Note also that, for UDP packets, the full (unfragmented) 
-			 *       packet length can be obtained out of the UDP length field
-			 *       (which includes the IP header itself). There's not such
-			 *       thing in TCP traffic.
-			 */
-			/* check for IP fragment offset */
-			if ( (ntohs(packet->ip->ip_off) & 0x1fff) != 0 )
-				{
-				/* this is a fragment, but not the first one: assume no L4 contents */
-				packet->l4_len = 0;
-				packet->l7_len = packet->l3_len - packet->l3_hlen;
-				break;
-				}
-
-#if 0
-			/* check for IP fragment MF */
-			if ( (ntohs(packet->ip->ip_off) & 0x2000) != 0 )
-				/* this is the first fragment: assume remaining data is IP length */
-				packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
-#endif
-
-			/* init L4 length */
-			packet->l4_len = 0;
-
-			/* dump transport header */
-			switch ((int)packet->ip->ip_p)
-				{
-				case IPPROTO_TCP:
-					/* get TCP header */
-					(void) pcap_get_tcp(packet);
-					break;
-
-				case IPPROTO_UDP:
-					/* get UDP header */
-					(void)pcap_get_udp(packet);
-					break;
-
-				case IPPROTO_ICMP:
-#ifdef DONT_IGNORE_ICMP
-					/* get ICMP header */
-					(void)pcap_get_icmp(packet);
-					break;
-#endif
-
-				default:
-					(void) pcap_get_l4(packet);
-					break;
-				}
-				packet->l7_len = packet->l4_len - packet->l4_hlen;
-				pi += packet->l4_hlen;
-
+		case ETH_P_IPV6:
+			/* get IP6 header */
+			(void) pcap_get_ip6(packet);
 			break;
 
 		default:
 			(void) pcap_get_l3(packet);
-			pi += packet->l3_hlen;
-			/* don't know how to dump this L3: assume remaining is L3 */
-			/* reset L4 and L7 lengths */
-			packet->l4_len = 0;
-			packet->l7_len = 0;
 			break;
+		}
+	pi += packet->l3_hlen;
+
+	/* get L4 header */
+	if ( packet->l4_len > 0 )
+		{
+		/* dump transport header */
+		switch ( packet->l4_proto )
+			{
+			case IPPROTO_TCP:
+				/* get TCP header */
+				(void) pcap_get_tcp(packet);
+				break;
+
+			case IPPROTO_UDP:
+				/* get UDP header */
+				(void)pcap_get_udp(packet);
+				break;
+
+			case IPPROTO_ICMP:
+#ifdef DONT_IGNORE_ICMP
+				/* get ICMP header */
+				(void)pcap_get_icmp(packet);
+				break;
+#endif
+
+			default:
+				(void) pcap_get_l4(packet);
+				break;
+			}
+		pi += packet->l4_hlen;
 		}
 
 	/* get L7 contents */
+	packet->l7_len = packet->l4_len - packet->l4_hlen;
 	(void) pcap_get_l7(packet);
 	pi += packet->l7_len;
 
@@ -1484,14 +1473,14 @@ int pcap_get_l2(packet_t *packet)
 
 		case DLT_RAW:
 			/* raw IP (no link layer) */
-			packet->l3_proto = ETHERTYPE_IP;
+			packet->l3_proto = ETH_P_IP;
 			break;
 
 		case DLT_NULL:
 		case DLT_FDDI:
 		default:
 			/* unknown structure datalink: won't try to interpret it */
-			packet->l3_proto = ETHERTYPE_IP;
+			packet->l3_proto = ETH_P_IP;
 			break;
 		}
 
@@ -1500,6 +1489,7 @@ int pcap_get_l2(packet_t *packet)
 
 
 
+/* don't know how to dump this L3: assume remaining is L3 */
 int pcap_get_l3(packet_t *packet)
 {
 	/* point L3 header pointer */
@@ -1508,8 +1498,12 @@ int pcap_get_l3(packet_t *packet)
 	/* get the actual l3_len in the packet */
 	packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
 
-	/* unknown L3 header length */
+	/* unknown L3 header -> everything is header */
 	packet->l3_hlen = packet->l3_len;
+
+	/* no L4 */
+	packet->l4_proto = -1;
+	packet->l4_len = 0;
 
 	return 0;
 }
@@ -1529,6 +1523,7 @@ int pcap_get_ip (packet_t* packet)
 			/* we need a full IP header (cut options are OK) */
 			(packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen) )
 		{
+		packet->l3_proto = -1;
 		packet->ip = NULL;
 		packet->ip_opts = NULL;
 		(void)pcap_get_l3(packet);
@@ -1557,6 +1552,65 @@ int pcap_get_ip (packet_t* packet)
 	packet->ip_sum_valid = (packet->ip->ip_sum ==
 			ip_checksum ((uint8_t *)(packet->ip))) ? 1 : 0;
 
+	/*
+	 * \note On IP fragments, the IP length field actually states the 
+	 *       size of the fragment, not the size of the full packet. 
+	 *       ("[When fragmenting] a long internet datagram [...] [into] 
+	 *       two new internet datagrams [...] [the] first portion of the 
+	 *       data is placed in the first new internet datagram, and the 
+	 *       total length field is set to the length of the first 
+	 *       datagram." [See RFC 791, Section 2.3, Page 8])
+	 *
+	 *       Note also that, for UDP packets, the full (unfragmented) 
+	 *       packet length can be obtained out of the UDP length field
+	 *       (which includes the IP header itself). There's not such
+	 *       thing in TCP traffic.
+	 */
+	/* deal with IP offset fragments */
+	if ( (ntohs(packet->ip->ip_off) & 0x1fff) != 0 )
+		{
+		/* this is a fragment, but not the first one: assume no L4 contents */
+		packet->l4_len = 0;
+		packet->l7_len = packet->l3_len - packet->l3_hlen;
+		return 0;
+		}
+
+#if 0
+			/* check for IP fragment MF */
+			if ( (ntohs(packet->ip->ip_off) & 0x2000) != 0 )
+				/* this is the first fragment: assume remaining data is IP length */
+				packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
+#endif
+
+	/* start assuming everything else is L4 */
+	packet->l4_proto = (int)packet->ip->ip_p;
+	packet->l4_len = packet->l3_len - packet->l3_hlen;
+
+	return 0;
+}
+
+
+
+int pcap_get_ip6(packet_t *packet)
+{
+	/* point IPv6 header pointer */
+	packet->ip6 = (struct ip6_hdr *)(packet->buffer + packet->l2_hlen);
+
+	/* get IPv6 header length */
+	packet->l3_hlen = sizeof(struct ip6_hdr);
+	packet->l3_hlen = MIN(packet->l3_hlen, htonl(packet->frame.caplen) -
+			packet->l2_hlen);
+	packet->l3_hlen = MAX(packet->l3_hlen, 0);
+
+	/* get the actual l3_len in the packet */
+	packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
+	packet->l3_len = MIN(packet->l3_len, packet->l3_hlen +
+			ntohs(packet->ip6->ip6_plen));
+
+	/* start assuming everything else is L4 */
+	packet->l4_proto = (int)packet->ip6->ip6_nxt;
+	packet->l4_len = packet->l3_len - packet->l3_hlen;
+
 	return 0;
 }
 
@@ -1580,6 +1634,8 @@ int pcap_get_l4(packet_t *packet)
 
 int pcap_get_tcp (packet_t* packet)
 {
+	uint16_t tcp_sum;
+
 	/* point TCP header pointers */
 	packet->tcp = (struct tcphdr *)(packet->buffer + packet->l2_hlen +
 			packet->l3_hlen);
@@ -1597,7 +1653,6 @@ int pcap_get_tcp (packet_t* packet)
 		(void)pcap_get_l4(packet);
 		return -1;
 		}
-
 
 	/* get TCP header length */
 	packet->l4_hlen = packet->tcp->th_off<<2;
@@ -1617,8 +1672,11 @@ int pcap_get_tcp (packet_t* packet)
 	packet->l4_len = packet->l3_len - packet->l3_hlen;
 
 	/* check tcp checksum validity */
-	packet->tcp_sum_valid = (packet->tcp->th_sum ==
-			tcp_checksum((uint8_t *)(packet->ip), htons(packet->ip->ip_len))) ? 1 : 0;
+	if ( packet->ip )
+		tcp_sum = tcp_checksum((uint8_t *)(packet->ip), htons(packet->ip->ip_len));
+	else if ( packet->ip6 )
+
+	packet->tcp_sum_valid = (packet->tcp->th_sum == tcp_sum) ? 1 : 0;
 
 	return 0;
 }
@@ -2021,6 +2079,15 @@ int getval_string (type_t type, char *str, void *value)
 			return 0;
 			break;
 			}
+		case TYPE_IPADDR6:
+			{
+			struct in6_addr tmp;
+			if ( inet_pton(AF_INET6, str, &tmp) == 0 )
+				return -1;
+ 			memcpy(value, (void *)&tmp, sizeof(struct in6_addr));
+			return 0;
+			break;
+			}
 		case TYPE_TCPFLAGS:
 			{
 			uint32_t flags = 0;
@@ -2084,35 +2151,46 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 		}
 
 	/* dump l3 header */
-	if ( packet->ip != NULL )
+	switch (packet->l3_proto)
 		{
-		txt_put_ip(fp, packet);
-		/* dump l4 header */
-		if ( packet->l4_len > 0 )
-			switch ( (int)packet->ip->ip_p )
-				{
-				case IPPROTO_TCP:
-					txt_put_tcp(fp, packet);
-					break;
-				case IPPROTO_UDP:
-					txt_put_udp(fp, packet);
-					break;
-#ifdef DONT_IGNORE_ICMP
-				case IPPROTO_ICMP:
-					txt_put_icmp(fp, packet);
-					break;
-#endif
-				default:
-					txt_put_l4(fp, packet);
-					break;
-				}
-		/* dump l7 header */
-		if ( packet->l7_len > 0 )
-			txt_put_l7(fp, packet);
+		case ETH_P_IP:
+			txt_put_ip(fp, packet);
+			break;
 
+		case ETH_P_IPV6:
+			txt_put_ip6(fp, packet);
+			break;
+
+		default:
+			txt_put_l3(fp, packet);
+			break;
 		}
-	else /* default */
-		txt_put_l3(fp, packet);
+
+	if ( packet->l4_len > 0 )
+		{
+		/* dump L4 header */
+		switch (packet->l4_proto)
+			{
+			case IPPROTO_TCP:
+				txt_put_tcp(fp, packet);
+				break;
+			case IPPROTO_UDP:
+				txt_put_udp(fp, packet);
+				break;
+#ifdef DONT_IGNORE_ICMP
+			case IPPROTO_ICMP:
+				txt_put_icmp(fp, packet);
+				break;
+#endif
+			default:
+				txt_put_l4(fp, packet);
+				break;
+			}
+		}
+
+	/* dump l7 header */
+	if ( packet->l7_len > 0 )
+		txt_put_l7(fp, packet);
 
 	/* dump the remaining data */
 	if ( packet->rem_len > 0 )
@@ -2286,6 +2364,43 @@ int txt_put_ip (FILE *fp, packet_t* packet)
 		/* dump ip options */
 		txt_put_string(fp, ", %s%c %s", txt_label_ip_header[14], SEP_FIELD,
 				encode_string (packet->ip_opts, packet->ip_optlen));
+
+	txt_put_string(fp, "\n");
+	return 0;
+}
+
+
+
+int txt_put_ip6 (FILE *fp, packet_t* packet)
+{
+	char buf[INET6_ADDRSTRLEN];
+
+	txt_put_string(fp, "  %s%c ip6, ", TEXT_GENERIC_HEADER, SEP_FIELD);
+
+	txt_put_string(fp, "%s%c 0x%08x, ",     txt_label_ip6_header[0], SEP_FIELD,
+			ntohl(packet->ip6->ip6_flow));
+	if ( packet->l3_len == (sizeof(struct ip6_hdr)+ntohs(packet->ip6->ip6_plen)) )
+		/* packet->l3_len is right */
+		txt_put_string(fp, "%s%c %s (%i), ",txt_label_ip6_header[1], SEP_FIELD,
+				KEYWORD_OK, ntohs(packet->ip6->ip6_plen));
+	else
+		/* packet->l3_len is wrong */
+		txt_put_string(fp, "%s%c %i, ",txt_label_ip6_header[1], SEP_FIELD,
+				ntohs(packet->ip6->ip6_plen));
+	txt_put_string(fp, "%s%c %i, ",     txt_label_ip6_header[2], SEP_FIELD,
+			packet->ip6->ip6_nxt);
+	txt_put_string(fp, "%s%c %i, ",     txt_label_ip6_header[3], SEP_FIELD,
+			packet->ip6->ip6_hops);
+
+	/* src address */
+	(void)inet_ntop(AF_INET6, (const void *)&(packet->ip6->ip6_src), buf, 
+			INET6_ADDRSTRLEN);
+	txt_put_string(fp, "%s%c %s, ",     txt_label_ip6_header[4], SEP_FIELD, buf);
+
+	/* dst address */
+	(void)inet_ntop(AF_INET6, (const void *)&(packet->ip6->ip6_dst), buf, 
+			INET6_ADDRSTRLEN);
+	txt_put_string(fp, "%s%c %s",     txt_label_ip6_header[5], SEP_FIELD, buf);
 
 	txt_put_string(fp, "\n");
 	return 0;
@@ -2468,41 +2583,47 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 
 	bi += pcap_put_frame(buffer+bi, packet);
 	bi += pcap_put_l2(buffer+bi, packet);
+
+	/* dump L3 header */
 	switch (packet->l3_proto)
 		{
-		case ETHERTYPE_IP:
+		case ETH_P_IP:
 			bi += pcap_put_ip(buffer+bi, packet);
-			if ( (ntohs(packet->ip->ip_off) & 0x1fff) != 0 )
-				/* this is a fragment, but not the first one: assume no L4 contents */
-				break;
-
-			/* dump transport header */
-			switch (packet->ip->ip_p)
-				{
-				case IPPROTO_TCP:
-					bi += pcap_put_tcp(buffer+bi, packet); break;
-				case IPPROTO_UDP:
-					bi += pcap_put_udp(buffer+bi, packet); break;
-				case IPPROTO_ICMP:
-#ifdef DONT_IGNORE_ICMP
-					bi += pcap_put_icmp(buffer+bi, packet); break;
-#endif
-				default:
-					bi += pcap_put_l4(buffer+bi, packet);
-					break;
-				}
 			break;
+
+		case ETH_P_IPV6:
+			bi += pcap_put_ip6(buffer+bi, packet);
+			break;
+
 		default:
 			bi += pcap_put_l3(buffer+bi, packet);
 			break;
 		}
+
+	if ( packet->l4_hlen > 0 )
+		{
+		/* dump L4 header */
+		switch (packet->l4_proto)
+			{
+			case IPPROTO_TCP:
+				bi += pcap_put_tcp(buffer+bi, packet); break;
+			case IPPROTO_UDP:
+				bi += pcap_put_udp(buffer+bi, packet); break;
+			case IPPROTO_ICMP:
+#ifdef DONT_IGNORE_ICMP
+				bi += pcap_put_icmp(buffer+bi, packet); break;
+#endif
+			default:
+				bi += pcap_put_l4(buffer+bi, packet);
+				break;
+			}
+		}
+
 	bi += pcap_put_l7(buffer+bi, packet);
 	bi += pcap_put_rem(buffer+bi, packet);
 
-
 	/* packet postprocessing */
 	pcap_postprocess_packet(buffer, packet);
-
 
 	/* write the packet to the file descriptor */
 	if ( do_fwrite (fp, (uint8_t *)buffer, bi) < 0 )
@@ -2547,6 +2668,14 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 		*ptr = packet->ip->ip_len;
 		}
 
+	/* fix ip6.ip6_plen */
+	if ( packet->ip6 && ntohs(packet->ip6->ip6_plen) == (uint16_t)VALUE_OK )
+		{
+		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen + 4);
+		packet->ip6->ip6_plen = htons(packet->l3_len - packet->l3_hlen);
+		*ptr = packet->ip6->ip6_plen;
+		}
+
 	/* fix frame.caplen */
 	if ( ntohl(packet->frame.caplen) == (uint32_t)VALUE_OK )
 		{
@@ -2574,7 +2703,7 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 		}
 
 	/* fix/store tcp.th_seq */
-	if (seq_table_enabled && packet->tcp && (int)packet->ip->ip_p == IPPROTO_TCP)
+	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP)
 		{
 		uint32_t seq;
 		uint32_t *ptr;
@@ -2593,7 +2722,7 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 		}
 
 	/* fix tcp.th_ack */
-	if (seq_table_enabled && packet->tcp && (int)packet->ip->ip_p == IPPROTO_TCP)
+	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP)
 		{
 		uint32_t ack;
 		uint32_t *ptr;
@@ -2705,6 +2834,24 @@ int pcap_put_ip (char *buf, packet_t *packet)
 
 
 
+int pcap_put_ip6 (char *buf, packet_t *packet)
+{
+	int len;
+
+	/* check ip header */
+	if ( ((ntohl(packet->ip6->ip6_flow) & 0xf0000000)>>28) != 6 )
+		/* we only know how to process IPv6 */
+		return 0;
+
+	/* dump ip header */
+	len = sizeof(struct ip6_hdr);
+	memcpy(buf, (uint8_t *)(packet->ip6), len);
+
+	return len;
+}
+
+
+
 int pcap_put_l4 (char *buf, packet_t *packet)
 {
 	if ( packet->l4_hlen > 0 )
@@ -2809,13 +2956,19 @@ int txt_get_change_state(int cur, char *buf, packet_t* packet)
 			(cur == HEADER_FRAME && next == HEADER_L2) ||
 			(cur == HEADER_L2 && next == HEADER_L3) ||
 			(cur == HEADER_L2 && next == HEADER_IP) ||
+			(cur == HEADER_L2 && next == HEADER_IP6) ||
 			(cur == HEADER_FRAME && next == HEADER_ETHERNET) ||
 			(cur == HEADER_ETHERNET && next == HEADER_L3) ||
 			(cur == HEADER_ETHERNET && next == HEADER_IP) ||
+			(cur == HEADER_ETHERNET && next == HEADER_IP6) ||
 			(cur == HEADER_IP && next == HEADER_L4) ||
 			(cur == HEADER_IP && next == HEADER_TCP) ||
 			(cur == HEADER_IP && next == HEADER_UDP) ||
 			(cur == HEADER_IP && next == HEADER_ICMP) ||
+			(cur == HEADER_IP6 && next == HEADER_L4) ||
+			(cur == HEADER_IP6 && next == HEADER_TCP) ||
+			(cur == HEADER_IP6 && next == HEADER_UDP) ||
+			(cur == HEADER_IP6 && next == HEADER_ICMP) ||
 			(cur != HEADER_INIT && next == HEADER_L7) ||
 			(cur != HEADER_INIT && next == HEADER_REM) )
 		/* good transition */
@@ -2948,6 +3101,9 @@ void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 				break;
 			case HEADER_IP:
 				txt_get_ip(lbuf, rbuf, rlen, packet);
+				break;
+			case HEADER_IP6:
+				txt_get_ip6(lbuf, rbuf, rlen, packet);
 				break;
 			case HEADER_L4:
 				txt_get_l4(lbuf, rbuf, rlen, packet);
@@ -3267,7 +3423,7 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 		packet->ip = (struct ip *)(packet->buffer + packet->l2_hlen);
 		/* this is ip */
 		/*  ZZZ there should be a better way to get l3_proto from the L2 header */
-		packet->l3_proto = ETHERTYPE_IP;
+		packet->l3_proto = ETH_P_IP;
 		/* IP length is at least this */
 		packet->l3_hlen = sizeof(struct ip);
 		}
@@ -3281,6 +3437,7 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 		}
 
 	/* get value */
+	res = 0;
 	switch (id)
 		{
 		case 12: /* address is IPADDR */
@@ -3343,7 +3500,9 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 		case 9:
 			packet->ip->ip_ttl = (uint8_t)uvalue; break;
 		case 10:
-			packet->ip->ip_p = (uint8_t)uvalue; break;
+			packet->ip->ip_p = (uint8_t)uvalue;
+			packet->l4_proto = (int)packet->ip->ip_p;
+			break;
 		case 11:
 			packet->ip->ip_sum = htons((uint16_t)uvalue);
 			packet->ip_sum_valid = res;
@@ -3359,6 +3518,91 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			/* add options to the IP header length */
 			packet->l3_hlen += packet->ip_optlen;
 			break;
+		}
+
+	return 0;
+}
+
+
+
+int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet)
+{
+	int id;
+	int res;
+	struct in6_addr iavalue;
+	char *svalue;
+	uint32_t uvalue;
+
+	/* point the l3 header, if necessary */
+	if ( packet->ip6 == NULL )
+		{
+		packet->ip6 = (struct ip6_hdr *)(packet->buffer + packet->l2_hlen);
+		/* this is ipv6 */
+		/*  ZZZ there should be a better way to get l3_proto from the L2 header */
+		packet->l3_proto = ETH_P_IPV6;
+		/* IP length is at least this */
+		packet->l3_hlen = sizeof(struct ip6_hdr);
+		}
+
+	if ( (id = look_for_string(txt_label_ip6_header, lbuf)) < 0 )
+		{
+		/* invalid label */
+		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
+				__func__, line_number, lbuf);
+		exit(-1);
+		}
+
+	/* get value */
+	res = 0;
+	switch (id)
+		{
+		case 4: /* address is IPADDR6 */
+		case 5: /* address is IPADDR6 */
+			if ( getval_string (TYPE_IPADDR6, rbuf, (void *)&iavalue) < 0 )
+				{
+				/* invalid value */
+				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
+						__func__, txt_label_ip6_header[id], line_number,
+						valid_states_s[cur]);
+				exit(-1);
+				}
+#ifdef DEBUG
+			fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, inet_ntoa(iavalue));
+#endif
+			break;
+
+		default:
+			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
+				{
+				/* invalid value */
+				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
+						__func__, txt_label_ip6_header[id], line_number,
+						valid_states_s[cur]);
+				exit(-1);
+				}
+#ifdef DEBUG
+			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
+#endif
+			break;
+		}
+
+	/* put value */
+	switch (id)
+		{
+		case 0:
+			packet->ip6->ip6_flow = htonl((uint32_t)uvalue);
+		case 1:
+			packet->ip6->ip6_plen = htons((uint16_t)uvalue); break;
+		case 2:
+			packet->ip6->ip6_nxt = (uint8_t)uvalue;
+			packet->l4_proto = (int)packet->ip6->ip6_nxt;
+			break;
+		case 3:
+			packet->ip6->ip6_hops = (uint8_t)uvalue; break;
+		case 4:
+			memcpy((void *)&(packet->ip6->ip6_src), (void *)&iavalue, sizeof(struct in6_addr)); break;
+		case 5:
+			memcpy((void *)&(packet->ip6->ip6_dst), (void *)&iavalue, sizeof(struct in6_addr)); break;
 		}
 
 	return 0;
@@ -3738,25 +3982,47 @@ uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len)
 	unsigned int i;
 	register uint32_t sum;
 	uint16_t cksum;
+	uint8_t ip_v;
 	uint8_t ip_hlen;
 
 	/* initialize sum */
 	sum = 0;
 
-	/* get IP header length */
-	ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
+	/* get IP header version */
+	ip_v = ((*(ip_hdr)) & 0xf0)>>4;
 
 	/* add TCP pseudo header */
-	/* source address */
-	sum += (uint32_t)*(uint16_t *)(ip_hdr+12);
-	sum += (uint32_t)*(uint16_t *)(ip_hdr+14);
-	/* destination address */
-	sum += (uint32_t)*(uint16_t *)(ip_hdr+16);
-	sum += (uint32_t)*(uint16_t *)(ip_hdr+18);
-	/* IP protocol */
-	sum += (uint32_t)(*(uint8_t *)(ip_hdr+9))<<8;
-	/* TCP length */
-	sum += (uint32_t)htons((ntohs(*(uint16_t *)(ip_hdr+2)) - ip_hlen));
+	if ( ip_v == 4 )
+		{
+		/* get IP header length */
+		ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
+
+		/* source address */
+		sum += (uint32_t)*(uint16_t *)(ip_hdr+12);
+		sum += (uint32_t)*(uint16_t *)(ip_hdr+14);
+		/* destination address */
+		sum += (uint32_t)*(uint16_t *)(ip_hdr+16);
+		sum += (uint32_t)*(uint16_t *)(ip_hdr+18);
+		/* IP protocol */
+		sum += (uint32_t)(*(uint8_t *)(ip_hdr+9))<<8;
+		/* TCP length */
+		sum += (uint32_t)htons((ntohs(*(uint16_t *)(ip_hdr+2)) - ip_hlen));
+		}
+	else if ( ip_v == 6 )
+		{
+		/* get IP header length */
+		ip_hlen = ntohs(*(uint16_t *)(ip_hdr+4)) - sizeof(struct ip6_hdr);
+
+		/* src/dst address */
+		for (i = 8; i < sizeof(struct ip6_hdr); i = i + 2)
+			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
+
+		/* payload length */
+		sum += (uint32_t)*(uint16_t *)(ip_hdr+4);
+
+		/* next header length */
+		sum += (uint32_t)*(uint8_t *)(ip_hdr+6);
+		}
 
 	/* make 16 bit words out of every two adjacent bytes, and add them up */
 	for (i = ip_hlen; i < (ip_len-1); i = i + 2)
@@ -3926,6 +4192,10 @@ uint32_t seq_check(packet_t* packet, int type)
 
 	/* ensure seq table is enabled */
 	if ( seq_table_enabled == 0 )
+		return result;
+
+	/* ZZZ we don't support IPv6 seq tables (yet) */
+	if ( packet->l3_proto == ETH_P_IPV6 )
 		return result;
 
 	/* build conn */
