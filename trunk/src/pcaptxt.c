@@ -248,6 +248,7 @@
 #define MAX_TCP_OPTIONS MAX_PACKET_LENGTH
 #define MAX_L7_LENGTH MAX_PACKET_LENGTH
 #define MAX_REM_LENGTH MAX_PACKET_LENGTH
+#define MAX_PACKET_ASCII_LENGTH (4*8096)
 
 /* these macros are just so useful */
 #ifndef MAX
@@ -558,8 +559,8 @@ int little_endian;
 struct pcap_file_header file_hdr;
 packet_t the_packet;
 
-char remaining_label[MAX_PACKET_LENGTH];
-char remaining_contents[MAX_PACKET_LENGTH];
+char remaining_label[MAX_PACKET_ASCII_LENGTH];
+char remaining_contents[MAX_PACKET_ASCII_LENGTH];
 string_t rem_label = {remaining_label, 0};
 string_t rem_contents = {remaining_contents, 0};
 
@@ -1849,7 +1850,7 @@ char* dump_ethaddr (uint8_t *addr)
  */
 char *encode_string (unsigned char *pkt, int len)
 {
-	static char buf[MAX_PACKET_LENGTH];
+	static char buf[MAX_PACKET_ASCII_LENGTH];
 	int pi = 0;
 	int bi = 0;
 
@@ -1878,7 +1879,7 @@ char *encode_string (unsigned char *pkt, int len)
  */
 char *escape_string (unsigned char *pkt, int len)
 {
-	static char buf[MAX_PACKET_LENGTH];
+	static char buf[MAX_PACKET_ASCII_LENGTH];
 	int pi = 0;
 	int bi = 0;
 
@@ -3072,12 +3073,12 @@ int txt_get_pair(char *line, int state, string_t *left, string_t *right,
 
 void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 {
-	char lbuf[MAX_PACKET_LENGTH];
-	char rbuf[MAX_PACKET_LENGTH];
+	char lbuf[MAX_PACKET_ASCII_LENGTH];
+	char rbuf[MAX_PACKET_ASCII_LENGTH];
 	int rlen;
 
-	(void)unescape_string_t (left, lbuf, MAX_PACKET_LENGTH);
-	rlen = unescape_string_t (right, rbuf, MAX_PACKET_LENGTH);
+	(void)unescape_string_t (left, lbuf, MAX_PACKET_ASCII_LENGTH);
+	rlen = unescape_string_t (right, rbuf, MAX_PACKET_ASCII_LENGTH);
 
 	if ( strcasecmp(TEXT_GENERIC_HEADER, lbuf) == 0 )
 		cur = txt_get_change_state(cur, rbuf, packet);
@@ -4072,9 +4073,9 @@ int do_fwrite(FILE *fp, uint8_t *buf, int len)
 
 void string_append(string_t *str, string_t *post)
 {
-	if ( (str->l + post->l) > MAX_PACKET_LENGTH )
-		fprintf(stderr, "Error [%s]: String too small (%i)\n", __func__,
-				MAX_PACKET_LENGTH);
+	if ( (str->l + post->l) > MAX_PACKET_ASCII_LENGTH )
+		fprintf(stderr, "Error [%s]: String too big (%i)\n", __func__,
+				MAX_PACKET_ASCII_LENGTH);
 	memcpy(str->s+str->l, post->s, post->l);
 	str->l += post->l;
 	str->s[str->l] = '\0';

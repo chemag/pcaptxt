@@ -36,3 +36,6 @@ Thu Jun 26 18:59:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* new: support for ipv6
 	* fix: invalid ip headers should invalidate l3_proto
 
+Fri Jul  4 12:05:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* fix: fixed crash on jumbo packets
+
