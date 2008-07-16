@@ -39,3 +39,7 @@ Thu Jun 26 18:59:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 Fri Jul  4 12:05:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* fix: fixed crash on jumbo packets
 
+Wed Jul 16 17:31:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* fix: fixed bug on tcp_checksum
+	* fix: got rid of ip_len parameter in tcp_checksum
+

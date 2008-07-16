@@ -675,7 +675,7 @@ int txt_get_rem(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 
 
 uint16_t ip_checksum(uint8_t *ip_hdr);
-uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len);
+uint16_t tcp_checksum(uint8_t *ip_hdr);
 
 /* error function */
 void pcaptxt_error (int code, char *str, ...);
@@ -1674,8 +1674,9 @@ int pcap_get_tcp (packet_t* packet)
 
 	/* check tcp checksum validity */
 	if ( packet->ip )
-		tcp_sum = tcp_checksum((uint8_t *)(packet->ip), htons(packet->ip->ip_len));
+		tcp_sum = tcp_checksum((uint8_t *)(packet->ip));
 	else if ( packet->ip6 )
+		tcp_sum = tcp_checksum((uint8_t *)(packet->ip6));
 
 	packet->tcp_sum_valid = (packet->tcp->th_sum == tcp_sum) ? 1 : 0;
 
@@ -2752,10 +2753,9 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 	/* fix tcp cksum */
 	if ( packet->tcp && packet->tcp_sum_valid )
 		{
-		int ip_len = ntohs(packet->ip->ip_len);
 		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen +
 				packet->l3_hlen + 16);
-		packet->tcp->th_sum = tcp_checksum ((uint8_t *)(packet->ip), ip_len);
+		packet->tcp->th_sum = tcp_checksum ((uint8_t *)(packet->ip));
 		*ptr = packet->tcp->th_sum;
 		}
 
@@ -3975,16 +3975,17 @@ uint16_t ip_checksum(uint8_t *ip_hdr)
  * \note This function operates in network order
  *
  * \param[in] ip_hdr IP header
- * \param[in] ip_len IP length
  * \retval uint16_t Checksum in network order
  */
-uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len)
+uint16_t tcp_checksum(uint8_t *ip_hdr)
 {
-	unsigned int i;
+	uint16_t i;
 	register uint32_t sum;
 	uint16_t cksum;
 	uint8_t ip_v;
-	uint8_t ip_hlen;
+	uint16_t ip_hlen = 0;
+  /* ip_len includes header and payload */
+	uint16_t ip_len = 0;
 
 	/* initialize sum */
 	sum = 0;
@@ -3992,12 +3993,24 @@ uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len)
 	/* get IP header version */
 	ip_v = ((*(ip_hdr)) & 0xf0)>>4;
 
+	/* get IP header length and total length */
+	if ( ip_v == 4 )
+		{
+		ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
+		ip_len = ntohs(*(uint16_t *)(ip_hdr+2));
+		}
+	else if ( ip_v == 6 )
+		{
+		/* get IP header length */
+		uint16_t ip_plen = 0;
+		ip_plen = ntohs(*(uint16_t *)(ip_hdr+4));
+		ip_hlen = sizeof(struct ip6_hdr);
+		ip_len = ip_plen - ip_hlen;
+		}
+
 	/* add TCP pseudo header */
 	if ( ip_v == 4 )
 		{
-		/* get IP header length */
-		ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
-
 		/* source address */
 		sum += (uint32_t)*(uint16_t *)(ip_hdr+12);
 		sum += (uint32_t)*(uint16_t *)(ip_hdr+14);
@@ -4011,11 +4024,8 @@ uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len)
 		}
 	else if ( ip_v == 6 )
 		{
-		/* get IP header length */
-		ip_hlen = ntohs(*(uint16_t *)(ip_hdr+4)) - sizeof(struct ip6_hdr);
-
 		/* src/dst address */
-		for (i = 8; i < sizeof(struct ip6_hdr); i = i + 2)
+		for (i = 8; i < ip_hlen; i = i + 2)
 			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
 
 		/* payload length */
@@ -4025,7 +4035,7 @@ uint16_t tcp_checksum(uint8_t *ip_hdr, uint32_t ip_len)
 		sum += (uint32_t)*(uint8_t *)(ip_hdr+6);
 		}
 
-	/* make 16 bit words out of every two adjacent bytes, and add them up */
+	/* make 16 bit words out of every two adjacent TCP bytes, and add them up */
 	for (i = ip_hlen; i < (ip_len-1); i = i + 2)
 		if (i != (unsigned int)(ip_hlen + 16)) /* exclude TCP checksum */
 			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
