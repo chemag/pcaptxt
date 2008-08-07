@@ -43,3 +43,7 @@ Wed Jul 16 17:31:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* fix: fixed bug on tcp_checksum
 	* fix: got rid of ip_len parameter in tcp_checksum
 
+Thu Aug  7 13:10:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* new: added some options to pcapdiff
+	* fix: fixed minor bugs on snarfing bogus TCP and IP packets
+

@@ -1520,9 +1520,23 @@ int pcap_get_ip (packet_t* packet)
 	/* check we're happy with the IP header */
 	if (
 			/* we only know how to process IPv4 */
-			packet->ip->ip_v != 4 ||
+			(packet->ip->ip_v != 4) ||
+			/* IP headers should be at least 20-byte long */
+			/* from the IP spec (RFC 791):
+			 *   "Internet Header Length is the length of the internet header in
+			 *    32 bit words, and thus points to the beginning of the data. 
+			 *    Note that the minimum value for a correct header is 5."
+			 */
+			((packet->ip->ip_hl << 2) < (u_int8_t)sizeof(struct ip)) ||
+			/* same applies to the Total Length Field, which includes 
+			 * header and payload. Note, though, that we only require the
+			 * main header, not the IP options */
+			/* from the IP spec (RFC 791):
+			 *   "Total Length is the length of the datagram, measured in octets,
+			 *    including internet header and data." */
+			(ntohs(packet->ip->ip_len) < sizeof(struct ip)) ||
 			/* we need a full IP header (cut options are OK) */
-			(packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen) )
+			((packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen)) )
 		{
 		packet->l3_proto = -1;
 		packet->ip = NULL;
@@ -1645,10 +1659,17 @@ int pcap_get_tcp (packet_t* packet)
 
 	/* check we're happy with the TCP header */
 	if (
+			/* TCP headers should be at least 20-byte long */
+			/* from the TCP spec (RFC 793):
+			 *   "Data Offset:  4 bits
+			 *
+			 *      The number of 32 bit words in the TCP Header" */
+			((packet->tcp->th_off << 2) < (u_int8_t)sizeof(struct tcphdr)) ||
 			/* we need a full TCP header (cut options are OK) */
-			(packet->l2_hlen + packet->l3_hlen + sizeof(struct tcphdr)) >
-					ntohl(packet->frame.caplen) )
+			((packet->l2_hlen + packet->l3_hlen + (u_int8_t)sizeof(struct tcphdr)) >
+					ntohl(packet->frame.caplen)) )
 		{
+		packet->l4_proto = -1;
 		packet->tcp = NULL;
 		packet->tcp_opts = NULL;
 		(void)pcap_get_l4(packet);
@@ -1656,9 +1677,10 @@ int pcap_get_tcp (packet_t* packet)
 		}
 
 	/* get TCP header length */
-	packet->l4_hlen = packet->tcp->th_off<<2;
+	packet->l4_hlen = packet->l3_len - packet->l3_hlen;
 	packet->l4_hlen = MIN(packet->l4_hlen, htonl(packet->frame.caplen) -
 			packet->l2_hlen - packet->l3_hlen);
+	packet->l4_hlen = MIN(packet->l4_hlen, (uint32_t)packet->tcp->th_off<<2);
 	packet->l4_hlen = MAX(packet->l4_hlen, 0);
 
 	/* get TCP options length */
@@ -1692,9 +1714,10 @@ int pcap_get_udp (packet_t* packet)
 			packet->l3_hlen);
 
 	/* get UDP header length */
-	packet->l4_hlen = sizeof(struct udphdr);
+	packet->l4_hlen = packet->l3_len - packet->l3_hlen;
 	packet->l4_hlen = MIN(packet->l4_hlen, htonl(packet->frame.caplen) -
 			packet->l2_hlen - packet->l3_hlen);
+	packet->l4_hlen = MIN(packet->l4_hlen, sizeof(struct udphdr));
 	packet->l4_hlen = MAX(packet->l4_hlen, 0);
 
 	/* get the actual l4_len in the packet */
@@ -1712,9 +1735,10 @@ int pcap_get_icmp (packet_t* packet)
 			packet->l3_hlen);
 
 	/* get ICMP header length */
-	packet->l4_hlen = sizeof(struct icmphdr);
+	packet->l4_hlen = packet->l3_len - packet->l3_hlen;
 	packet->l4_hlen = MIN(packet->l4_hlen, htonl(packet->frame.caplen) -
 			packet->l2_hlen - packet->l3_hlen);
+	packet->l4_hlen = MIN(packet->l4_hlen, sizeof(struct icmphdr));
 	packet->l4_hlen = MAX(packet->l4_hlen, 0);
 
 	/* get the actual l4_len in the packet */
@@ -3633,6 +3657,7 @@ int txt_get_l4(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
+	packet->l4_proto = -1;
 	switch (id)
 		{
 		case 0:
@@ -3707,6 +3732,7 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 		}
 
 	/* put value */
+	packet->l4_proto = IPPROTO_TCP;
 	switch (id)
 		{
 		case 0:
@@ -3784,6 +3810,7 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 #endif
 
 	/* put value */
+	packet->l4_proto = IPPROTO_UDP;
 	switch (id)
 		{
 		case 0:
@@ -3804,6 +3831,7 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 int txt_get_icmp(char *lbuf, char *rbuf, packet_t *packet)
 {
 	/* point the icmp header, if necessary */
+	packet->l4_proto = IPPROTO_ICMP;
 	if ( packet->icmp == NULL )
 		packet->icmp = (struct icmphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
