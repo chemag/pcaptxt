@@ -10,8 +10,16 @@ Installation Notes
 = [installation notes]
 
 	- user
-		- ./configure
-		- make && sudo make install
+		- build and install binary
+			- re-create package
+				$ autoreconf
+			$ ./configure
+			$ make && sudo make install
+		- ensure
+		- paste ./scripts/dotvimrc into ~/.vimrc
+			$ cat ./scripts/dotvimrc >> ~/.vimrc
+		- check that opening a .pcap file using vim allows text-based
+			pcap trace edition
 
 	- package management (maintainer)
 		- re-create package

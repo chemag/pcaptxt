@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# TODO(chema) use python for this
+
 DEBUG=0
 
 PCAPBIN=../src/pcaptxt

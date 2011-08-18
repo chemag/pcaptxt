@@ -1,0 +1,10 @@
+
+	- fix test infrastructure
+		- create your very first pcap trace from a text description
+		- move bash test code to python
+
+	- add python support
+		- compare to python modules that allow generating packet
+			traces (pcapy, pypcap, pylibpcap)
+		- write tests in python
+
