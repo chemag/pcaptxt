@@ -8,3 +8,6 @@
 			traces (pcapy, pypcap, pylibpcap)
 		- write tests in python
 
+	- import libhash from https://github.com/chemag/libhash
+		- now we just ship a hardcoded copy
+
