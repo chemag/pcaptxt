@@ -1,17 +1,13 @@
 Makefile
-Makefile.in
 aclocal.m4
 autom4te.cache/
 config.h
 config.h.in~
 config.log
 config.status
-configure
 scripts/Makefile
-scripts/Makefile.in
 src/.deps/
 src/Makefile
-src/Makefile.in
 src/getline.o
 src/pcaptxt
 src/pcaptxt.o
@@ -19,7 +15,6 @@ src/snscanf.o
 src/version.c
 src/version.o
 srclib/Makefile
-srclib/Makefile.in
 srclib/libhash-0.1/
 stamp-h1
 dist/

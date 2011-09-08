@@ -10,12 +10,14 @@ Installation Notes
 = [installation notes]
 
 	- user
+		- pre-installation requisites
+			- you need flex
+			- you must compile libpcap from sources (static)
 		- build and install binary
-			- re-create package
-				$ autoreconf
 			$ ./configure
 			$ make && sudo make install
-		- ensure
+		- run tests
+			$ make test
 		- paste ./scripts/dotvimrc into ~/.vimrc
 			$ cat ./scripts/dotvimrc >> ~/.vimrc
 		- check that opening a .pcap file using vim allows text-based
