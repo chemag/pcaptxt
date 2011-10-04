@@ -47,3 +47,7 @@ Thu Aug  7 13:10:00 CEST 2008  Jose M. Gonzalez <chema@cs.berkeley.edu>
 	* new: added some options to pcapdiff
 	* fix: fixed minor bugs on snarfing bogus TCP and IP packets
 
+Tue Oct  4 15:25:00 CEST 2011  Jose M. Gonzalez <chema@cs.berkeley.edu>
+	* fix: fixed some warnings
+	* fix: ensure only libhash gets linked statically
+

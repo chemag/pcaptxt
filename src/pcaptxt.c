@@ -1334,7 +1334,7 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 {
 	FILE *fp;
 	unsigned char buffer[1024];
-	int i;
+	int i, len;
 
 
 	if (filename[0] == '-' && filename[1] == '\0')
@@ -1370,7 +1370,14 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 			exit(-1);
 			}
 		/* read the header bytes */
-		fread(buffer, sizeof(struct pcap_file_header), 1, fp);
+		len = fread(buffer, sizeof(struct pcap_file_header), 1, fp);
+		if (len != 1)
+			{
+			/* invalid read */
+			fprintf (stderr, "Error [%s]: read %i bytes of pcap_file_header\n",
+					__func__, len);
+			exit(-1);
+			}
 		}
 
 
@@ -1649,7 +1656,7 @@ int pcap_get_l4(packet_t *packet)
 
 int pcap_get_tcp (packet_t* packet)
 {
-	uint16_t tcp_sum;
+	uint16_t tcp_sum = 0;
 
 	/* point TCP header pointers */
 	packet->tcp = (struct tcphdr *)(packet->buffer + packet->l2_hlen +

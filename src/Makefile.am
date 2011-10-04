@@ -7,7 +7,7 @@ noinst_HEADERS=getline.h snscanf.h
 LIBHASH_DIR = ../srclib/libhash-0.1/src/.libs
 LIBHASH_INC = ../srclib/libhash-0.1/src
 
-CCOPT = -W -Wall -Wno-unused -pedantic -static
+CCOPT = -W -Wall -Wno-unused -pedantic
 INCLS = -I. -I$(top_srcdir)/src -I$(srcdir) -I$(top_builddir) -I$(LIBHASH_INC)
 AM_CFLAGS = $(INCLS) $(CCOPT)
 AM_CPPFLAGS = $(INCLS) $(CCOPT)
@@ -44,7 +44,20 @@ MOSTLYCLEANFILES = $(BIF_FUNC_H) $(BIF_FUNC_DEF) $(BIF_FUNC_INIT) \
 	$(BINPAC_H) $(BINPAC_CC) \
 	$(DISTCLEANFILES)
 
-LIBS = @LIBS@ -L$(LIBHASH_DIR) -lhash
+# in order to link against libhash without having to get it installed, we
+# want to have it linked statically. We have two options
+# 1) we can link all the libraries statically.
+#AM_LDFLAGS = -static
+# The main issue is that linking glibc statically is a bad idea: We're
+# linking against libpcap, which relies on various glibc NSS functions. 
+# We would be getting linking warnings (e.g. "warning: Using 'getaddrinfo'
+# in statically linked applications requires at runtime the shared libraries
+# from the glibc version used for linking")*, and we would be skipping the
+# local host NSS configuration.
+# *Note that the warnings would be hollow: nm'ing the final binary shows the
+# function definitions get included
+#  2) we can link libhash statically, all the other dynamically
+LIBS = @LIBS@ -Wl,-Bstatic -L$(LIBHASH_DIR) -lhash -Wl,-Bdynamic
 
 
 # test infrastructure
