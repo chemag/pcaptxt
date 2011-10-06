@@ -1,108 +1,67 @@
-" ---------------------------------------------------------------------
-" File: pcap.vim
-" Birthday: Mon Feb 26 14:55:31 PDT 20057
-" Author: Jose M. Gonzalez
-"         (inspired on bro.vim)
+" Name: pcap.vim
+" Birthday: Mon Feb 26 14:55:31 PDT 2007
+" Author: Jose M Gonzalez <chema@cs.berkeley.edu>
+" Summary: Vim plugin for transparent editing of pcap trace files.
+" TODO add some (sensible) highlighting syntax
+" Section: Documentation {{{1
+" Description:
+"   
+"   This script implements transparent editing of pcap tracefiles. The
+"   The filename must have a ".pcap" suffix. When opening such a file
+"   the content is transformed into text (using pcaptxt). The contents
+"   are transformed back into a pcap trace format before writing.
 "
-" * PROBLEMS *
-"   - keywords within hyphenated words (e.g. "port" in port-name) are
-"     highlighted
+" Installation: 
 "
-" 
-" ---------------------------------------------------------------------
+"   Copy the pcap.vim file to your $HOME/.vim/plugin directory.
+"   Refer to ':help add-plugin', ':help add-global-plugin' and ':help
+"   runtimepath' for more details about Vim plugins.
+"
+" Credits:
+" Inspired on http://www.vi-improved.org/wiki/index.php/VimGpg
 
-if version < 600
-  syntax clear
-elseif exists("b:current_syntax")
-  finish
-endif
+" Section: Plugin header {{{1
+if (exists("loaded_pcap") || &cp || exists("#BufReadPre#*.pcap"))
+	finish
+endi
+let loaded_pcap = 1
 
-syn keyword broStatement     header
-syn keyword broStatement     case
-syn keyword broStatement     alarm using
-syn keyword broStatement     default delete else 
-syn keyword broStatement     event efmt 
-syn keyword broStatement     local match next
-syn keyword broStatement     print return schedule
-syn keyword broStatement     switch this type
+" Section: Autocmd setup {{{1
+augroup pcaptrace
+	autocmd!
+	" Ensure everybody knows this is pcap (i.e., no bin syntax)
+	autocmd BufNewFile,BufRead          *.pcap set filetype=pcap
+	" First make sure nothing is written to ~/.viminfo while editing
+	" an encrypted file.
+	autocmd BufReadPre,FileReadPre      *.pcap set viminfo=
+	" Switch to binary mode to read the trace
+	autocmd BufReadPre,FileReadPre      *.pcap set bin
+	autocmd BufReadPre,FileReadPre      *.pcap let shsave=&sh
+	autocmd BufReadPre,FileReadPre      *.pcap let &sh='sh'
+	autocmd BufReadPre,FileReadPre      *.pcap let ch_save = &ch|set ch=2
+	"autocmd BufReadPost,FileReadPost    *.pcap '[,']!tee DEBUG
+	autocmd BufReadPost,FileReadPost    *.pcap '[,']!pcaptxt -s p 2> /dev/null
+	"autocmd BufReadPost,FileReadPost    *.pcap '[,']!pcaptxt -s p 2> /tmp/vimlog
+	autocmd BufReadPost,FileReadPost    *.pcap let &sh=shsave
+	" Switch to normal mode for editing
+	autocmd BufReadPost,FileReadPost    *.pcap set nobin
+	autocmd BufReadPost,FileReadPost    *.pcap let &ch = ch_save|unlet ch_save
+	autocmd BufReadPost,FileReadPost    *.pcap execute ":doautocmd BufReadPost " . expand("%:r")
+	" Convert all text to trace before writing
+	autocmd BufWritePre,FileWritePre    *.pcap set bin
+	autocmd BufWritePre,FileWritePre    *.pcap let shsave=&sh
+	autocmd BufWritePre,FileWritePre    *.pcap let &sh='sh'
+	" http://tech.groups.yahoo.com/group/vim/message/78100
+	autocmd BufWritePre,FileWritePre    *.pcap set noendofline
+	autocmd BufWritePre,FileWritePre    *.pcap '[,']!pcaptxt -V -s a 2>/dev/null
+	"autocmd BufWritePre,FileWritePre    *.pcap '[,']!pcaptxt -V -s a 2>/tmp/vimlog
+	autocmd BufWritePre,FileWritePre    *.pcap let &sh=shsave
+	" Undo the ascii->pcap so we are back in the normal text, directly
+	" after the file has been written.
+	autocmd BufWritePost,FileWritePost  *.pcap silent u
+	autocmd BufWritePost,FileWritePost  *.pcap set nobin
+augroup END
 
-syn keyword broStorageClass  const global redef global_attr export
+" Section: Highlight setup {{{1
+" TODO(chema)
 
-syn keyword broOperator      in add of any
-
-syn keyword broStatement     function nextgroup=broFunction skipwhite
-syn match   broFunction      "[a-zA-Z_][a-zA-Z0-9_]*" contained
-
-syn keyword broType          addr bool count 
-syn keyword broType          counter double enum 
-syn keyword broType          file int interval 
-syn keyword broType          list net pattern    
-syn keyword broType          port record set
-syn keyword broType          string subnet table
-syn keyword broType          timer time union
-syn keyword broType          vector 
-
-syn keyword broDate          day days hr hrs
-syn keyword broDate          min mins sec
-syn keyword broDate          secs msec msecs
-syn keyword broDate          usec usecs
-
-
-syn keyword broRepeat        for
-
-syn keyword broConditional   if else
-
-" String and Character constants
-" Highlight special characters (those which have a backslash) differently
-syn match     cSpecial        display contained "\\\(x\x\+\|\o\{1,3}\|.\|$\)"
-syn match     cSpecial        display contained "\\\(u\x\{4}\|U\x\{8}\)"
-syn match     cFormat         display "%\(\d\+\$\)\=[-+' #0*]*\(\d*\|\*\|\*\d\+\$\)\(\.\(\d*\|\*\|\*\d\+\$\)\)\=\([hlL]\|ll\)\=\([bdiuoxXDOUfeEgGcCsSpn]\|\[\^\=.[^]]*\]\)" contained
-syn match     cFormat         display "%%" contained
-syn region    cString         start=+L\="+ skip=+\\\\\|\\"+ end=+"+ contains=cSpecial,cFormat,@Spell
-
-syn match  broEscape         +\\[abfnrtv'"\\]+ contained
-syn match  broEscape         "\\\o\{1,3}" contained
-syn match  broEscape         "\\x\x\{2}" contained
-syn match  broEscape         "\(\\u\x\{4}\|\\U\x\{8}\)" contained
-syn match  broEscape         "\\$"
-
-syn match   broComment       "#.*$" contains=broTodo
-syn keyword broTodo          TODO FIXME XXX contained
-
-" numbers (including longs and complex)
-syn match   broNumber      "\<0x\x\+[Ll]\=\>"
-syn match   broNumber      "\<\d\+[LljJ]\=\>"
-syn match   broNumber      "\.\d\+\([eE][+-]\=\d\+\)\=[jJ]\=\>"
-syn match   broNumber      "\<\d\+\.\([eE][+-]\=\d\+\)\=[jJ]\=\>"
-syn match   broNumber      "\<\d\+\.\d\+\([eE][+-]\=\d\+\)\=[jJ]\=\>"
-
-if version >= 508 || !exists("did_bro_syn_inits")
-  if version <= 508
-    let did_bro_syn_inits = 1
-    command -nargs=+ HiLink hi link <args>
-  else
-    command -nargs=+ HiLink hi def link <args>
-  endif
-
-  " The default methods for highlighting.  Can be overridden later
-  HiLink broStatement        Statement
-  HiLink broFunction         Function
-  HiLink broConditional      Conditional
-  HiLink broRepeat           Repeat
-  HiLink broEscape           Special
-  HiLink broType             Type
-  HiLink broPreCondit        PreCondit
-  HiLink broComment          Comment
-  HiLink broTodo             Todo
-  HiLink broNumber           Number
-  HiLink broOperator         Operator
-  HiLink broStorageClass     StorageClass 
-  HiLink broDate             SpecialChar 
-  HiLink cString             String
-  HiLink cFormat                cSpecial
-  HiLink cSpecial            SpecialChar
-
-  delcommand HiLink
-endif
-
-let b:current_syntax = "pcap"
