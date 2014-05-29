@@ -604,13 +604,15 @@ am__EXEEXT_TRUE
 LTLIBOBJS
 USE_LIBHASH_FALSE
 USE_LIBHASH_TRUE
-LIBOBJS
 EGREP
 GREP
 CPP
+LIBOBJS
+PCAP_CONFIG
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
 CCDEPMODE
+am__nodep
 AMDEPBACKSLASH
 AMDEP_FALSE
 AMDEP_TRUE
@@ -2713,11 +2715,11 @@ MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
-# Always define AMTAR for backward compatibility.
+# Always define AMTAR for backward compatibility.  Yes, it's still used
+# in the wild :-(  We should find a proper way to deprecate it ...
+AMTAR='$${TAR-tar}'
 
-AMTAR=${AMTAR-"${am_missing_run}tar"}
-
-am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
+am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
 
 
 
@@ -3568,6 +3570,7 @@ fi
 if test "x$enable_dependency_tracking" != xno; then
   am_depcomp="$ac_aux_dir/depcomp"
   AMDEPBACKSLASH='\'
+  am__nodep='_no'
 fi
  if test "x$enable_dependency_tracking" != xno; then
   AMDEP_TRUE=
@@ -3592,6 +3595,7 @@ else
   # instance it was reported that on HP-UX the gcc test will end up
   # making a dummy file named `D' -- because `-MD' means `put the output
   # in D'.
+  rm -rf conftest.dir
   mkdir conftest.dir
   # Copy depcomp to subdir because otherwise we won't find it if we're
   # using a relative directory.
@@ -3651,7 +3655,7 @@ else
 	break
       fi
       ;;
-    msvisualcpp | msvcmsys)
+    msvc7 | msvc7msys | msvisualcpp | msvcmsys)
       # This compiler won't grok `-c -o', but also, the minuso test has
       # not run yet.  These depmodes are late enough in the game, and
       # so weak that their functioning should not be impacted.
@@ -4106,26 +4110,147 @@ $as_echo "Using $pfopen" >&6; }
 $as_echo_n "checking for local pcap library... " >&6; }
     libpcap=FAIL
     lastdir=FAIL
-            oneup=`(cd ..; pwd)`
-    places=`ls .. | sed -e 's,/$,,' -e "s,^,$oneup/," | \
-	egrep '/libpcap-[0-9]*\.[0-9]*(\.[0-9]*)?([ab][0-9]*)?$'`
-    for dir in $places $oneup/libpcap libpcap ; do
-	    basedir=`echo $dir | sed -e 's/[ab][0-9]*$//'`
+    places=`ls $srcdir/.. | sed -e 's,/$,,' -e "s,^,$srcdir/../," | \
+	egrep '/libpcap-[0-9]+\.[0-9]+(\.[0-9]*)?([ab][0-9]*|-PRE-GIT)?$'`
+    for dir in $places $srcdir/../libpcap $srcdir/libpcap ; do
+	    basedir=`echo $dir | sed -e 's/[ab][0-9]*$//' | \
+	        sed -e 's/-PRE-GIT$//' `
 	    if test $lastdir = $basedir ; then
 		    		    continue;
 	    fi
 	    lastdir=$dir
-	    if test -r $dir/pcap.c ; then
+	    if test -r $dir/libpcap.a ; then
 		    libpcap=$dir/libpcap.a
 		    d=$dir
 		    	    fi
     done
-    if test "x$libpcap" = xFAIL ; then
+    if test $libpcap = FAIL ; then
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_open_live in -lpcap" >&5
-$as_echo_n "checking for pcap_open_live in -lpcap... " >&6; }
-if ${ac_cv_lib_pcap_pcap_open_live+:} false; then :
+
+	    #
+	    # Look for pcap-config.
+	    #
+	    if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pcap-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pcap-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PCAP_CONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $PCAP_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PCAP_CONFIG="$PCAP_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PCAP_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PCAP_CONFIG=$ac_cv_path_PCAP_CONFIG
+if test -n "$PCAP_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCAP_CONFIG" >&5
+$as_echo "$PCAP_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_PCAP_CONFIG"; then
+  ac_pt_PCAP_CONFIG=$PCAP_CONFIG
+  # Extract the first word of "pcap-config", so it can be a program name with args.
+set dummy pcap-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_PCAP_CONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_PCAP_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PCAP_CONFIG="$ac_pt_PCAP_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ac_pt_PCAP_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PCAP_CONFIG=$ac_cv_path_ac_pt_PCAP_CONFIG
+if test -n "$ac_pt_PCAP_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PCAP_CONFIG" >&5
+$as_echo "$ac_pt_PCAP_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_PCAP_CONFIG" = x; then
+    PCAP_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    PCAP_CONFIG=$ac_pt_PCAP_CONFIG
+  fi
+else
+  PCAP_CONFIG="$ac_cv_path_PCAP_CONFIG"
+fi
+
+	    if test -n "$PCAP_CONFIG" ; then
+		#
+		# Found - use it to get the include flags for
+		# libpcap and the flags to link with libpcap.
+		#
+		# Please read section 11.6 "Shell Substitutions"
+		# in the autoconf manual before doing anything
+		# to this that involves quoting.  Especially note
+		# the statement "There is just no portable way to use
+		# double-quoted strings inside double-quoted back-quoted
+		# expressions (pfew!)."
+		#
+		cflags=`"$PCAP_CONFIG" --cflags`
+		V_INCLS="$cflags $V_INCLS"
+		libpcap=`"$PCAP_CONFIG" --libs`
+	    else
+		#
+		# Not found; look for pcap.
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpcap" >&5
+$as_echo_n "checking for main in -lpcap... " >&6; }
+if ${ac_cv_lib_pcap_main+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -4133,268 +4258,139 @@ LIBS="-lpcap  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pcap_open_live ();
+
 int
 main ()
 {
-return pcap_open_live ();
+return main ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pcap_pcap_open_live=yes
+  ac_cv_lib_pcap_main=yes
 else
-  ac_cv_lib_pcap_pcap_open_live=no
+  ac_cv_lib_pcap_main=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_pcap_open_live" >&5
-$as_echo "$ac_cv_lib_pcap_pcap_open_live" >&6; }
-if test "x$ac_cv_lib_pcap_pcap_open_live" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_main" >&5
+$as_echo "$ac_cv_lib_pcap_main" >&6; }
+if test "x$ac_cv_lib_pcap_main" = xyes; then :
   libpcap="-lpcap"
 fi
 
-	    unset ac_cv_lib_pcap_pcap_open_live
-	    if test "x$libpcap" = xFAIL ; then
-		    CFLAGS="$CFLAGS -I/usr/local/include"
-		    LIBS="$LIBS -L/usr/local/lib"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_open_live in -lpcap" >&5
-$as_echo_n "checking for pcap_open_live in -lpcap... " >&6; }
-if ${ac_cv_lib_pcap_pcap_open_live+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpcap  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pcap_open_live ();
-int
-main ()
-{
-return pcap_open_live ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pcap_pcap_open_live=yes
-else
-  ac_cv_lib_pcap_pcap_open_live=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_pcap_open_live" >&5
-$as_echo "$ac_cv_lib_pcap_pcap_open_live" >&6; }
-if test "x$ac_cv_lib_pcap_pcap_open_live" = xyes; then :
-  libpcap="-lpcap"
-fi
-
-		    unset ac_cv_lib_pcap_pcap_open_live
-		    if test "x$libpcap" = xFAIL ; then
-			    as_fn_error $? "see the INSTALL doc for more info" "$LINENO" 5
+		if test $libpcap = FAIL ; then
+		    as_fn_error $? "see the INSTALL doc for more info" "$LINENO" 5
+		fi
+																																								{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for extraneous pcap header directories" >&5
+$as_echo_n "checking for extraneous pcap header directories... " >&6; }
+		if test \( ! -r /usr/local/include/pcap.h \) -a \
+			\( ! -r /usr/include/pcap.h \); then
+		    if test -r /usr/local/include/pcap/pcap.h; then
+			d="/usr/local/include/pcap"
+		    elif test -r /usr/include/pcap/pcap.h; then
+			d="/usr/include/pcap"
 		    fi
-		    V_INCLS="$V_INCLS -I/usr/local/include"
+		fi
+		if test -z "$d" ; then
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+		else
+		    V_INCLS="-I$d $V_INCLS"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: found -- -I$d added" >&5
+$as_echo "found -- -I$d added" >&6; }
+		fi
 	    fi
-	    LIBS="$LIBS -lpcap"
     else
 	    V_PCAPDEP=$libpcap
-	    V_INCLS="-I$d $V_INCLS"
+	    places=`ls $srcdir/.. | sed -e 's,/$,,' -e "s,^,$srcdir/../," | \
+    	 		egrep '/libpcap-[0-9]*.[0-9]*(.[0-9]*)?([ab][0-9]*)?$'`
+	    if test -r $d/pcap.h; then
+		    V_INCLS="-I$d $V_INCLS"
+	    elif test -r $places/pcap.h; then
+		    V_INCLS="-I$places $V_INCLS"
+	    else
+                    as_fn_error see INSTALL "cannot find pcap.h" "$LINENO" 5
+ 	    fi
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $libpcap" >&5
 $as_echo "$libpcap" >&6; }
-    fi
-    if test "x$libpcap" != "x-lpcap" ; then
-      LIBS="-L$d -lpcap $LIBS"
-    fi
-
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_freecode in -lpcap" >&5
-$as_echo_n "checking for pcap_freecode in -lpcap... " >&6; }
-if ${ac_cv_lib_pcap_pcap_freecode+:} false; then :
+	    # Extract the first word of "pcap-config", so it can be a program name with args.
+set dummy pcap-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PCAP_CONFIG+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpcap  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+  case $PCAP_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PCAP_CONFIG="$PCAP_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $d
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PCAP_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pcap_freecode ();
-int
-main ()
-{
-return pcap_freecode ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pcap_pcap_freecode=yes
+  ;;
+esac
+fi
+PCAP_CONFIG=$ac_cv_path_PCAP_CONFIG
+if test -n "$PCAP_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PCAP_CONFIG" >&5
+$as_echo "$PCAP_CONFIG" >&6; }
 else
-  ac_cv_lib_pcap_pcap_freecode=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_pcap_freecode" >&5
-$as_echo "$ac_cv_lib_pcap_pcap_freecode" >&6; }
-if test "x$ac_cv_lib_pcap_pcap_freecode" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBPCAP 1
-_ACEOF
-
-  LIBS="-lpcap $LIBS"
-
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 
-    if test "$ac_cv_lib_pcap_pcap_freecode" = no ; then
 
-$as_echo "#define DONT_HAVE_LIBPCAP_PCAP_FREECODE /**/" >>confdefs.h
-
+	    if test -n "$PCAP_CONFIG"; then
+		#
+		# The libpcap directory has a pcap-config script.
+		# Use it to get any additioal libraries needed
+		# to link with the libpcap archive library in
+		# that directory.
+		#
+		# Please read section 11.6 "Shell Substitutions"
+		# in the autoconf manual before doing anything
+		# to this that involves quoting.  Especially note
+		# the statement "There is just no portable way to use
+		# double-quoted strings inside double-quoted back-quoted
+		# expressions (pfew!)."
+		#
+		additional_libs=`"$PCAP_CONFIG" --additional-libs --static`
+		libpcap="$libpcap $additional_libs"
+	    fi
     fi
+    LIBS="$libpcap $LIBS"
+    if ! test -n "$PCAP_CONFIG" ; then
+	#
+	# We don't have pcap-config; find out any additional link flags
+	# we need.  (If we have pcap-config, we assume it tells us what
+	# we need.)
+	#
+	case "$host_os" in
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap headers" >&5
-$as_echo_n "checking for pcap headers... " >&6; }
-		pcap_header_locations="\
-			$PWD/../libpcap \
-			/usr/include \
-			/usr/include/pcap \
-			/usr/src/sys \
-			/usr/local/include \
-			/usr/local/src/libpcap \
-            $d"
-		pcap_includes=FAIL
-		for dir in $pcap_header_locations; do
-			if test -r $dir/pcap.h ; then
-				pcap_includes=$dir
-				break
-			fi
-		done
-    if test "x$pcap_includes" = xFAIL ; then
-			as_fn_error $? "couldn't find pcap.h" "$LINENO" 5
-    fi
-    if test "x$pcap_includes" != x/usr/include ; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcap_includes" >&5
-$as_echo "$pcap_includes" >&6; }
-	    V_INCLS="$V_INCLS -I$pcap_includes"
-    else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $pcap_includes" >&5
-$as_echo "$pcap_includes" >&6; }
-    fi
-
-		    if test "$ac_cv_lib_pcap_pcap_freecode" = yes ; then
-			CFLAGS="$CFLAGS -I$pcap_includes"
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if pcap_compile_nopcap needs error parameter" >&5
-$as_echo_n "checking if pcap_compile_nopcap needs error parameter... " >&6; }
-			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-					#include <pcap.h>
-
-int
-main ()
-{
-
-					int snaplen;
-					int linktype;
-					struct bpf_program fp;
-					int optimize;
-					bpf_u_int32 netmask;
-					char str[10];
-					snaplen = 50;
-					linktype = DLT_EN10MB;
-					optimize = 1;
-					netmask = 0L;
-					str[0] = 'i'; str[1] = 'p'; str[2] = '\0';
-					(void)pcap_compile_nopcap(snaplen, linktype, &fp, str, optimize, netmask);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  result="ok"
-else
-  result="wrong"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-			if test "$result" = "ok" ; then
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not needed" >&5
-$as_echo "not needed" >&6; }
-			else
-				cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-						#include <pcap.h>
-
-int
-main ()
-{
-
-						int snaplen;
-						int linktype;
-						struct bpf_program fp;
-						int optimize;
-						bpf_u_int32 netmask;
-						char str[10];
-						char error[1024];
-						snaplen = 50;
-						linktype = DLT_EN10MB;
-						optimize = 1;
-						netmask = 0L;
-						str[0] = 'i'; str[1] = 'p'; str[2] = '\0';
-						(void)pcap_compile_nopcap(snaplen, linktype, &fp, str, optimize, netmask, &error);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  result="ok"
-else
-  result="wrong"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-				if test "$result" = "ok" ; then
-
-$as_echo "#define LIBPCAP_PCAP_COMPILE_NOPCAP_HAS_ERROR_PARAMETER /**/" >>confdefs.h
-
-					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: needed" >&5
-$as_echo "needed" >&6; }
-				else
-					as_fn_error $? "don't know (weird pcap_compile_nopcap)" "$LINENO" 5
-				fi
-			fi
-		fi
-
-
-    case "$target_os" in
-
-    aix*)
+	aix*)
+	    #
+	    # If libpcap is DLPI-based, we have to use /lib/pse.exp if
+	    # present, as we use the STREAMS routines.
+	    #
+	    # (XXX - true only if we're linking with a static libpcap?)
+	    #
 	    pseexe="/lib/pse.exp"
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $pseexe" >&5
 $as_echo_n "checking for $pseexe... " >&6; }
@@ -4403,8 +4399,123 @@ $as_echo_n "checking for $pseexe... " >&6; }
 $as_echo "yes" >&6; }
 		    LIBS="$LIBS -I:$pseexe"
 	    fi
+
+	    #
+	    # If libpcap is BPF-based, we need "-lodm" and "-lcfg", as
+	    # we use them to load the BPF module.
+	    #
+	    # (XXX - true only if we're linking with a static libpcap?)
+	    #
+	    LIBS="$LIBS -lodm -lcfg"
 	    ;;
-    esac
+	esac
+    fi
+
+                                    ac_fn_c_check_func "$LINENO" "pcap_loop" "ac_cv_func_pcap_loop"
+if test "x$ac_cv_func_pcap_loop" = xyes; then :
+
+else
+
+	    as_fn_error $? "Report this to tcpdump-workers@lists.tcpdump.org, and include the
+config.log file in your report.  If you have downloaded libpcap from
+tcpdump.org, and built it yourself, please also include the config.log
+file from the libpcap source directory, the Makefile from the libpcap
+source directory, and the output of the make process for libpcap, as
+this could be a problem with the libpcap that was built, and we will
+not be able to determine why this is happening, and thus will not be
+able to fix it, without that information, as we have not been able to
+reproduce this problem ourselves." "$LINENO" 5
+
+fi
+
+
+                        ac_fn_c_check_func "$LINENO" "pcap_list_datalinks" "ac_cv_func_pcap_list_datalinks"
+if test "x$ac_cv_func_pcap_list_datalinks" = xyes; then :
+
+$as_echo "#define HAVE_PCAP_LIST_DATALINKS 1" >>confdefs.h
+
+else
+
+	    case " $LIBOBJS " in
+  *" datalinks.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS datalinks.$ac_objext"
+ ;;
+esac
+
+
+fi
+
+    ac_fn_c_check_func "$LINENO" "pcap_set_datalink" "ac_cv_func_pcap_set_datalink"
+if test "x$ac_cv_func_pcap_set_datalink" = xyes; then :
+
+$as_echo "#define HAVE_PCAP_SET_DATALINK 1" >>confdefs.h
+
+fi
+
+    ac_fn_c_check_func "$LINENO" "pcap_datalink_name_to_val" "ac_cv_func_pcap_datalink_name_to_val"
+if test "x$ac_cv_func_pcap_datalink_name_to_val" = xyes; then :
+
+
+$as_echo "#define HAVE_PCAP_DATALINK_NAME_TO_VAL 1" >>confdefs.h
+
+	    ac_fn_c_check_func "$LINENO" "pcap_datalink_val_to_description" "ac_cv_func_pcap_datalink_val_to_description"
+if test "x$ac_cv_func_pcap_datalink_val_to_description" = xyes; then :
+
+$as_echo "#define HAVE_PCAP_DATALINK_VAL_TO_DESCRIPTION 1" >>confdefs.h
+
+else
+
+		    case " $LIBOBJS " in
+  *" dlnames.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS dlnames.$ac_objext"
+ ;;
+esac
+
+
+fi
+
+
+else
+
+	    case " $LIBOBJS " in
+  *" dlnames.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS dlnames.$ac_objext"
+ ;;
+esac
+
+
+fi
+
+
+                        for ac_func in pcap_breakloop
+do :
+  ac_fn_c_check_func "$LINENO" "pcap_breakloop" "ac_cv_func_pcap_breakloop"
+if test "x$ac_cv_func_pcap_breakloop" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_PCAP_BREAKLOOP 1
+_ACEOF
+
+fi
+done
+
+
+                ac_fn_c_check_func "$LINENO" "pcap_dump_ftell" "ac_cv_func_pcap_dump_ftell"
+if test "x$ac_cv_func_pcap_dump_ftell" = xyes; then :
+
+$as_echo "#define HAVE_PCAP_DUMP_FTELL 1" >>confdefs.h
+
+else
+
+	    case " $LIBOBJS " in
+  *" pcap_dump_ftell.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS pcap_dump_ftell.$ac_objext"
+ ;;
+esac
+
+
+fi
+
+
 CPPFLAGS="$CPPFLAGS $V_INCLS"
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

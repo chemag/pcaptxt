@@ -1,9 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Old libpcap versions (< 0.6.1) need defining pcap_freecode and
-   pcap_compile_nopcap */
-#undef DONT_HAVE_LIBPCAP_PCAP_FREECODE
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -71,8 +67,26 @@
 /* Define to 1 if you have the <net/ethernet.h> header file. */
 #undef HAVE_NET_ETHERNET_H
 
+/* Define to 1 if you have the `pcap_breakloop' function. */
+#undef HAVE_PCAP_BREAKLOOP
+
+/* define if libpcap has pcap_datalink_name_to_val() */
+#undef HAVE_PCAP_DATALINK_NAME_TO_VAL
+
+/* define if libpcap has pcap_datalink_val_to_description() */
+#undef HAVE_PCAP_DATALINK_VAL_TO_DESCRIPTION
+
+/* define if libpcap has pcap_dump_ftell() */
+#undef HAVE_PCAP_DUMP_FTELL
+
 /* Define to 1 if you have the <pcap-int.h> header file. */
 #undef HAVE_PCAP_INT_H
+
+/* define if libpcap has pcap_list_datalinks() */
+#undef HAVE_PCAP_LIST_DATALINKS
+
+/* define if libpcap has pcap_set_datalink() */
+#undef HAVE_PCAP_SET_DATALINK
 
 /* Define to 1 if you have the `pfopen' function. */
 #undef HAVE_PFOPEN
@@ -128,10 +142,6 @@
 
 /* Define to 1 if you have the `vprintf' function. */
 #undef HAVE_VPRINTF
-
-/* Some libpcap versions use an extra parameter (error) in pcap_compile_nopcap
-   */
-#undef LIBPCAP_PCAP_COMPILE_NOPCAP_HAS_ERROR_PARAMETER
 
 /* Name of package */
 #undef PACKAGE

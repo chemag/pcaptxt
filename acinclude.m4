@@ -223,10 +223,9 @@ dnl
 dnl	$1 (pcapdep set)
 dnl	$2 (incls appended)
 dnl	LIBS
-dnl	LDFLAGS
 dnl	LBL_LIBS
 dnl
-AC_DEFUN([AC_LBL_LIBPCAP],
+AC_DEFUN(AC_LBL_LIBPCAP,
     [AC_REQUIRE([AC_LBL_LIBRARY_NET])
     dnl
     dnl save a copy before locating libpcap.a
@@ -243,145 +242,221 @@ AC_DEFUN([AC_LBL_LIBPCAP],
     AC_MSG_CHECKING(for local pcap library)
     libpcap=FAIL
     lastdir=FAIL
-    dnl Since config is at the top level, .. is meaningless for subdirs, get
-    dnl the full path
-    oneup=`(cd ..; pwd)`
-    places=`ls .. | sed -e 's,/$,,' -e "s,^,$oneup/," | \
-	egrep '/libpcap-[[0-9]]*\.[[0-9]]*(\.[[0-9]]*)?([[ab]][[0-9]]*)?$'`
-    for dir in $places $oneup/libpcap libpcap ; do
-	    basedir=`echo $dir | sed -e 's/[[ab]][[0-9]]*$//'`
+    places=`ls $srcdir/.. | sed -e 's,/$,,' -e "s,^,$srcdir/../," | \
+	egrep '/libpcap-[[0-9]]+\.[[0-9]]+(\.[[0-9]]*)?([[ab]][[0-9]]*|-PRE-GIT)?$'`
+    for dir in $places $srcdir/../libpcap $srcdir/libpcap ; do
+	    basedir=`echo $dir | sed -e 's/[[ab]][[0-9]]*$//' | \
+	        sed -e 's/-PRE-GIT$//' `
 	    if test $lastdir = $basedir ; then
 		    dnl skip alphas when an actual release is present
 		    continue;
 	    fi
 	    lastdir=$dir
-	    if test -r $dir/pcap.c ; then
+	    if test -r $dir/libpcap.a ; then
 		    libpcap=$dir/libpcap.a
 		    d=$dir
 		    dnl continue and select the last one that exists
 	    fi
     done
-    if test "x$libpcap" = xFAIL ; then
+    if test $libpcap = FAIL ; then
 	    AC_MSG_RESULT(not found)
-	    AC_CHECK_LIB(pcap, pcap_open_live, libpcap="-lpcap")
-	    unset ac_cv_lib_pcap_pcap_open_live
-	    if test "x$libpcap" = xFAIL ; then
-		    CFLAGS="$CFLAGS -I/usr/local/include"
-		    LIBS="$LIBS -L/usr/local/lib"
-		    AC_CHECK_LIB(pcap, pcap_open_live, libpcap="-lpcap")
-		    unset ac_cv_lib_pcap_pcap_open_live
-		    if test "x$libpcap" = xFAIL ; then
-			    AC_MSG_ERROR(see the INSTALL doc for more info)
+
+	    #
+	    # Look for pcap-config.
+	    #
+	    AC_PATH_TOOL(PCAP_CONFIG, pcap-config)
+	    if test -n "$PCAP_CONFIG" ; then
+		#
+		# Found - use it to get the include flags for
+		# libpcap and the flags to link with libpcap.
+		#
+		# Please read section 11.6 "Shell Substitutions"
+		# in the autoconf manual before doing anything
+		# to this that involves quoting.  Especially note
+		# the statement "There is just no portable way to use
+		# double-quoted strings inside double-quoted back-quoted
+		# expressions (pfew!)."
+		#
+		cflags=`"$PCAP_CONFIG" --cflags`
+		$2="$cflags $$2"
+		libpcap=`"$PCAP_CONFIG" --libs`
+	    else
+		#
+		# Not found; look for pcap.
+		#
+		AC_CHECK_LIB(pcap, main, libpcap="-lpcap")
+		if test $libpcap = FAIL ; then
+		    AC_MSG_ERROR(see the INSTALL doc for more info)
+		fi
+		dnl
+		dnl Some versions of Red Hat Linux put "pcap.h" in
+		dnl "/usr/include/pcap"; had the LBL folks done so,
+		dnl that would have been a good idea, but for
+		dnl the Red Hat folks to do so just breaks source
+		dnl compatibility with other systems.
+		dnl
+		dnl We work around this by assuming that, as we didn't
+		dnl find a local libpcap, libpcap is in /usr/lib or
+		dnl /usr/local/lib and that the corresponding header
+		dnl file is under one of those directories; if we don't
+		dnl find it in either of those directories, we check to
+		dnl see if it's in a "pcap" subdirectory of them and,
+		dnl if so, add that subdirectory to the "-I" list.
+		dnl
+		dnl (We now also put pcap.h in /usr/include/pcap, but we
+		dnl leave behind a /usr/include/pcap.h that includes it,
+		dnl so you can still just include <pcap.h>.)
+		dnl
+		AC_MSG_CHECKING(for extraneous pcap header directories)
+		if test \( ! -r /usr/local/include/pcap.h \) -a \
+			\( ! -r /usr/include/pcap.h \); then
+		    if test -r /usr/local/include/pcap/pcap.h; then
+			d="/usr/local/include/pcap"
+		    elif test -r /usr/include/pcap/pcap.h; then
+			d="/usr/include/pcap"
 		    fi
-		    $2="$$2 -I/usr/local/include"
+		fi
+		if test -z "$d" ; then
+		    AC_MSG_RESULT(not found)
+		else
+		    $2="-I$d $$2"
+		    AC_MSG_RESULT(found -- -I$d added)
+		fi
 	    fi
-	    LIBS="$LIBS -lpcap"
     else
 	    $1=$libpcap
-	    $2="-I$d $$2"
+	    places=`ls $srcdir/.. | sed -e 's,/$,,' -e "s,^,$srcdir/../," | \
+    	 		egrep '/libpcap-[[0-9]]*.[[0-9]]*(.[[0-9]]*)?([[ab]][[0-9]]*)?$'`
+	    if test -r $d/pcap.h; then
+		    $2="-I$d $$2"
+	    elif test -r $places/pcap.h; then
+		    $2="-I$places $$2"
+	    else
+                    AC_MSG_ERROR(cannot find pcap.h, see INSTALL)
+ 	    fi
 	    AC_MSG_RESULT($libpcap)
+	    AC_PATH_PROG(PCAP_CONFIG, pcap-config,, $d)
+	    if test -n "$PCAP_CONFIG"; then
+		#
+		# The libpcap directory has a pcap-config script.
+		# Use it to get any additioal libraries needed
+		# to link with the libpcap archive library in
+		# that directory.
+		#
+		# Please read section 11.6 "Shell Substitutions"
+		# in the autoconf manual before doing anything
+		# to this that involves quoting.  Especially note
+		# the statement "There is just no portable way to use
+		# double-quoted strings inside double-quoted back-quoted
+		# expressions (pfew!)."
+		#
+		additional_libs=`"$PCAP_CONFIG" --additional-libs --static`
+		libpcap="$libpcap $additional_libs"
+	    fi
     fi
-    if test "x$libpcap" != "x-lpcap" ; then
-      LIBS="-L$d -lpcap $LIBS"
-    fi
+    LIBS="$libpcap $LIBS"
+    if ! test -n "$PCAP_CONFIG" ; then
+	#
+	# We don't have pcap-config; find out any additional link flags
+	# we need.  (If we have pcap-config, we assume it tells us what
+	# we need.)
+	#
+	case "$host_os" in
 
-    dnl check libpcap is modern enough for Bro (>= 0.6.1)
-    AC_CHECK_LIB(pcap, pcap_freecode)
-    if test "$ac_cv_lib_pcap_pcap_freecode" = no ; then
-	    AC_DEFINE([DONT_HAVE_LIBPCAP_PCAP_FREECODE],[],[Old libpcap versions (< 0.6.1) need defining pcap_freecode and pcap_compile_nopcap])
-    fi
-
-		dnl check pcap headers location
-    AC_MSG_CHECKING(for pcap headers)
-		pcap_header_locations="\
-			$PWD/../libpcap \
-			/usr/include \
-			/usr/include/pcap \
-			/usr/src/sys \
-			/usr/local/include \
-			/usr/local/src/libpcap \
-            $d"
-		pcap_includes=FAIL
-		for dir in $pcap_header_locations; do
-			if test -r $dir/pcap.h ; then
-				pcap_includes=$dir
-				break
-			fi
-		done
-    if test "x$pcap_includes" = xFAIL ; then
-			AC_MSG_ERROR(couldn't find pcap.h)
-    fi
-    if test "x$pcap_includes" != x/usr/include ; then
-	    AC_MSG_RESULT($pcap_includes)
-	    V_INCLS="$V_INCLS -I$pcap_includes"
-    else
-        AC_MSG_RESULT($pcap_includes)
-    fi
-
-		dnl check if pcap_compile_nopcap needs error parameter (NetBSDism)
-    if test "$ac_cv_lib_pcap_pcap_freecode" = yes ; then
-			CFLAGS="$CFLAGS -I$pcap_includes"
-			AC_MSG_CHECKING(if pcap_compile_nopcap needs error parameter)
-			AC_LINK_IFELSE(
-				[AC_LANG_PROGRAM([[
-					#include <pcap.h>
-					]], [[
-					int snaplen;
-					int linktype;
-					struct bpf_program fp;
-					int optimize;
-					bpf_u_int32 netmask;
-					char str[10];
-					snaplen = 50;
-					linktype = DLT_EN10MB;
-					optimize = 1;
-					netmask = 0L;
-					str[0] = 'i'; str[1] = 'p'; str[2] = '\0';
-					(void)pcap_compile_nopcap(snaplen, linktype, &fp, str, optimize, netmask);
-					]])],result="ok",result="wrong")
-			if test "$result" = "ok" ; then
-				AC_MSG_RESULT(not needed)
-			else
-				AC_LINK_IFELSE(
-					[AC_LANG_PROGRAM([[
-						#include <pcap.h>
-						]], [[
-						int snaplen;
-						int linktype;
-						struct bpf_program fp;
-						int optimize;
-						bpf_u_int32 netmask;
-						char str[10];
-						char error[1024];
-						snaplen = 50;
-						linktype = DLT_EN10MB;
-						optimize = 1;
-						netmask = 0L;
-						str[0] = 'i'; str[1] = 'p'; str[2] = '\0';
-						(void)pcap_compile_nopcap(snaplen, linktype, &fp, str, optimize, netmask, &error);
-						]])],result="ok",result="wrong")
-				if test "$result" = "ok" ; then
-					AC_DEFINE([LIBPCAP_PCAP_COMPILE_NOPCAP_HAS_ERROR_PARAMETER],[],
-							[Some libpcap versions use an extra parameter (error) in pcap_compile_nopcap])
-					AC_MSG_RESULT(needed)
-				else
-					AC_MSG_ERROR(don't know (weird pcap_compile_nopcap))
-				fi
-			fi
-		fi
-
-
-    case "$target_os" in
-
-    aix*)
+	aix*)
+	    #
+	    # If libpcap is DLPI-based, we have to use /lib/pse.exp if
+	    # present, as we use the STREAMS routines.
+	    #
+	    # (XXX - true only if we're linking with a static libpcap?)
+	    #
 	    pseexe="/lib/pse.exp"
 	    AC_MSG_CHECKING(for $pseexe)
 	    if test -f $pseexe ; then
 		    AC_MSG_RESULT(yes)
 		    LIBS="$LIBS -I:$pseexe"
 	    fi
+
+	    #
+	    # If libpcap is BPF-based, we need "-lodm" and "-lcfg", as
+	    # we use them to load the BPF module.
+	    #
+	    # (XXX - true only if we're linking with a static libpcap?)
+	    #
+	    LIBS="$LIBS -lodm -lcfg"
 	    ;;
-    esac])
+	esac
+    fi
+
+    dnl
+    dnl Check for "pcap_loop()", to make sure we found a working
+    dnl libpcap and have all the right other libraries with which
+    dnl to link.  (Otherwise, the checks below will fail, not
+    dnl because the routines are missing from the library, but
+    dnl because we aren't linking properly with libpcap, and
+    dnl that will cause confusing errors at build time.)
+    dnl
+    AC_CHECK_FUNC(pcap_loop,,
+	[
+	    AC_MSG_ERROR(
+[Report this to tcpdump-workers@lists.tcpdump.org, and include the
+config.log file in your report.  If you have downloaded libpcap from
+tcpdump.org, and built it yourself, please also include the config.log
+file from the libpcap source directory, the Makefile from the libpcap
+source directory, and the output of the make process for libpcap, as
+this could be a problem with the libpcap that was built, and we will
+not be able to determine why this is happening, and thus will not be
+able to fix it, without that information, as we have not been able to
+reproduce this problem ourselves.])
+	])
+
+    dnl
+    dnl Check for "pcap_list_datalinks()", "pcap_set_datalink()",
+    dnl and "pcap_datalink_name_to_val()", and use substitute versions
+    dnl if they're not present.
+    dnl
+    AC_CHECK_FUNC(pcap_list_datalinks,
+	AC_DEFINE(HAVE_PCAP_LIST_DATALINKS, 1,
+	    [define if libpcap has pcap_list_datalinks()]),
+	[
+	    AC_LIBOBJ(datalinks)
+	])
+    AC_CHECK_FUNC(pcap_set_datalink,
+	AC_DEFINE(HAVE_PCAP_SET_DATALINK, 1,
+	    [define if libpcap has pcap_set_datalink()]))
+    AC_CHECK_FUNC(pcap_datalink_name_to_val,
+	[
+	    AC_DEFINE(HAVE_PCAP_DATALINK_NAME_TO_VAL, 1,
+		[define if libpcap has pcap_datalink_name_to_val()])
+	    AC_CHECK_FUNC(pcap_datalink_val_to_description,
+		AC_DEFINE(HAVE_PCAP_DATALINK_VAL_TO_DESCRIPTION, 1,
+		    [define if libpcap has pcap_datalink_val_to_description()]),
+		[
+		    AC_LIBOBJ(dlnames)
+		])
+	],
+	[
+	    AC_LIBOBJ(dlnames)
+	])
+
+    dnl
+    dnl Check for "pcap_breakloop()"; you can't substitute for it if
+    dnl it's absent (it has hooks into the live capture routines),
+    dnl so just define the HAVE_ value if it's there.
+    dnl
+    AC_CHECK_FUNCS(pcap_breakloop)
+
+    dnl
+    dnl Check for "pcap_dump_ftell()" and use a substitute version
+    dnl if it's not present.
+    AC_CHECK_FUNC(pcap_dump_ftell,
+	AC_DEFINE(HAVE_PCAP_DUMP_FTELL, 1,
+	    [define if libpcap has pcap_dump_ftell()]),
+	[
+	    AC_LIBOBJ(pcap_dump_ftell)
+	])
+])
+
 
 dnl
 dnl Define RETSIGTYPE and RETSIGVAL
