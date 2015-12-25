@@ -1,4 +1,7 @@
 
+	- better DLT_ support
+		- at least add support for DLT_IEEE802_11_RADIO (127)
+
 	- fix test infrastructure
 		- create your very first pcap trace from a text description
 		- move bash test code to python
