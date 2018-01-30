@@ -1,9 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Old libpcap versions (< 0.6.1) need defining pcap_freecode and
-   pcap_compile_nopcap */
-#undef DONT_HAVE_LIBPCAP_PCAP_FREECODE
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -28,20 +24,8 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `nsl' library (-lnsl). */
-#undef HAVE_LIBNSL
-
 /* Define to 1 if you have the `pcap' library (-lpcap). */
 #undef HAVE_LIBPCAP
-
-/* Define to 1 if you have the `resolv' library (-lresolv). */
-#undef HAVE_LIBRESOLV
-
-/* Define to 1 if you have the `socket' library (-lsocket). */
-#undef HAVE_LIBSOCKET
-
-/* Define to 1 if you have the `str' library (-lstr). */
-#undef HAVE_LIBSTR
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
@@ -73,9 +57,6 @@
 
 /* Define to 1 if you have the <pcap-int.h> header file. */
 #undef HAVE_PCAP_INT_H
-
-/* Define to 1 if you have the `pfopen' function. */
-#undef HAVE_PFOPEN
 
 /* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
@@ -129,13 +110,6 @@
 /* Define to 1 if you have the `vprintf' function. */
 #undef HAVE_VPRINTF
 
-/* Some libpcap versions use an extra parameter (error) in pcap_compile_nopcap
-   */
-#undef LIBPCAP_PCAP_COMPILE_NOPCAP_HAS_ERROR_PARAMETER
-
-/* Name of package */
-#undef PACKAGE
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -165,9 +139,6 @@
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
-
-/* Version number of package */
-#undef VERSION
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
