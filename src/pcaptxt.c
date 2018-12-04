@@ -733,8 +733,7 @@ int main (int argc, char **argv)
 	/* parse argument line */
 	(void)parse_args (argc, argv);
 
-	switch (conversion)
-		{
+	switch (conversion) {
 		case CONVERSION_ASCII_TO_PCAP:
 			ascii_to_pcap(in_file, out_file);
 			break;
@@ -744,7 +743,7 @@ int main (int argc, char **argv)
 		default:
 			fprintf (stderr, "Error [%s]: Unknown conversion\n", __func__);
 			exit(-1);
-		}
+	}
 
 	exit(0);
 }
@@ -812,10 +811,8 @@ int parse_args (int argc, char **argv)
 
 
 	/* parse command-line arguments */
-	while ((arg = getopt(argc, argv, "r:w:f:s:Qq:VIDvdh?")) != -1)
-		{
-		switch (arg)
-			{
+	while ((arg = getopt(argc, argv, "r:w:f:s:Qq:VIDvdh?")) != -1) {
+		switch (arg) {
 			/* input */
 			case 'r':
 				in_file = optarg;
@@ -843,19 +840,18 @@ int parse_args (int argc, char **argv)
 				break;
 
 			case 's':
-				if ( optarg[0] == 'a' )
+				if ( optarg[0] == 'a' ) {
 					/* source is ascii */
 					conversion = CONVERSION_ASCII_TO_PCAP;
-				else if ( optarg[0] == 'p' )
+				} else if ( optarg[0] == 'p' ) {
 					/* source is pcap */
 					conversion = CONVERSION_PCAP_TO_ASCII;
-				else
-					{
+				} else {
 					/* invalid conversion */
 					fprintf(stderr, "Error [%s]: invalid conversion (%s)\n", __func__,
 							optarg);
 					exit(-1);
-					}
+				}
 				break;
 
 			/* seq table */
@@ -883,56 +879,57 @@ int parse_args (int argc, char **argv)
 			default:
 				usage();
 				break;
-			}
 		}
+	}
 
 
-	if ( conversion == CONVERSION_UNDEFINED )
-		{
+	if ( conversion == CONVERSION_UNDEFINED ) {
 		/* fix conversion */
 		int len;
 		char *s;
-		if ( in_file != NULL && (len = strlen(in_file)) > 4 )
-			{
+		if ( in_file != NULL && (len = strlen(in_file)) > 4 ) {
 			/* try to get info from in_file extension */
 			s = in_file + len - 4;
-			if ( strcasecmp(s, ".txt") == 0 )
+			if ( strcasecmp(s, ".txt") == 0 ) {
 				conversion = CONVERSION_ASCII_TO_PCAP;
-			else if ( strcasecmp(s, ".eth") == 0 )
+			} else if ( strcasecmp(s, ".eth") == 0 ) {
 				conversion = CONVERSION_PCAP_TO_ASCII;
+			}
 			s = in_file + len - 5;
-			if ( strcasecmp(s, ".pcap") == 0 )
+			if ( strcasecmp(s, ".pcap") == 0 ) {
 				conversion = CONVERSION_PCAP_TO_ASCII;
 			}
 		}
+	}
 
-	if ( conversion == CONVERSION_UNDEFINED )
-		{
+	if ( conversion == CONVERSION_UNDEFINED ) {
 		/* conversion still undefined */
 		/* fix conversion */
 		int len;
 		char *s;
-		if ( out_file != NULL && (len = strlen(out_file)) > 4 )
-			{
+		if ( out_file != NULL && (len = strlen(out_file)) > 4 ) {
 			/* try to get info from out_file extension */
 			s = out_file + len - 4;
-			if ( strcasecmp(s, ".txt") == 0 )
+			if ( strcasecmp(s, ".txt") == 0 ) {
 				conversion = CONVERSION_ASCII_TO_PCAP;
-			else if ( strcasecmp(s, ".eth") == 0 )
+			} else if ( strcasecmp(s, ".eth") == 0 ) {
 				conversion = CONVERSION_PCAP_TO_ASCII;
+			}
 			s = out_file + len - 5;
-			if ( strcasecmp(s, ".pcap") == 0 )
+			if ( strcasecmp(s, ".pcap") == 0 ) {
 				conversion = CONVERSION_PCAP_TO_ASCII;
 			}
 		}
+	}
 
 #ifdef DEBUG
 	fprintf (debug_fs, "Conversion is %i\n", conversion);
 #endif
 
-	if ( seq_table_enabled )
+	if ( seq_table_enabled ) {
 		/* init seq table */
 		seq_init(seq_table_len);
+	}
 
 	return 0;
 }
@@ -952,21 +949,22 @@ void pcap_to_ascii(char *in_file, char *out_file)
 	(void)pcap_get_file_header(in_file, &file_hdr);
 
 	/* set input in pcap */
-	if ( ! (pcap_pd = pcap_open_offline((char*) in_file, errbuf)) )
+	if ( ! (pcap_pd = pcap_open_offline((char*) in_file, errbuf)) ) {
 		pcaptxt_error(-1, "pcap_open_offline: %s\n", errbuf);
+	}
 	pcap_fd = fileno(pcap_file(pcap_pd));
 
 	/* get output desc */
-	if ( (out_file == NULL) || strncmp (out_file, "-", 1) == 0 )
+	if ( (out_file == NULL) || strncmp (out_file, "-", 1) == 0 ) {
 		/* use stdout */
 		out_fp = stdout;
-	else
-		{
+	} else {
 		/* open the file pointer for writing */
 		out_fp = fopen(out_file, "w+");
-		if ( out_fp == NULL )
+		if ( out_fp == NULL ) {
 			pcaptxt_error (-1, "Error opening %s: %s\n", out_file, my_strerror(errno));
 		}
+	}
 
 	/* dump pcap header */
 	txt_put_file_header(out_fp, &file_hdr);
@@ -974,24 +972,24 @@ void pcap_to_ascii(char *in_file, char *out_file)
 	/* read traffic */
 	/* packets are counted in natural order */
 	packet_counter = 1;
-	while (pcap_fd != -1)
-		{
+	while (pcap_fd != -1) {
 		/* reset packet contents */
 		packet_reset(packet);
 		packet->index = packet_counter;
-		if (pcap_dispatch(pcap_pd, 1, pcap_get_packet, (void*)&the_packet) < 0)
-			{
-			if ( errno == 0 )
+		if (pcap_dispatch(pcap_pd, 1, pcap_get_packet, (void*)&the_packet) < 0) {
+			if ( errno == 0 ) {
 				/* truncated file => mark it as dry */
 				pcap_fd = -1;
-			else
+			} else {
 				pcaptxt_error(-1, "pcap_dispatch: %s\n", pcap_geterr(pcap_pd));
 			}
-		if ( feof(pcap_file(pcap_pd)) )
+		}
+		if ( feof(pcap_file(pcap_pd)) ) {
 			pcap_fd = -1;
+		}
 		/* count the packet */
 		++packet_counter;
-		}
+	}
 
 
 	/* close trace */
@@ -1018,28 +1016,28 @@ void ascii_to_pcap(char *in_file, char *out_file)
 	packet = &the_packet;
 
 	/* get input desc */
-	if ( (in_file == NULL) || strncmp (in_file, "-", 1) == 0 )
+	if ( (in_file == NULL) || strncmp (in_file, "-", 1) == 0 ) {
 		/* use stdin */
 		in_fp = stdin;
-	else
-		{
+	} else {
 		/* open input file */
 		in_fp = fopen(in_file, "r");
-		if ( in_fp == NULL )
+		if ( in_fp == NULL ) {
 			pcaptxt_error (-1, "Error opening %s: %s\n", in_file, my_strerror(errno));
 		}
+	}
 
 	/* get output desc */
-	if ( (out_file == NULL) || strncmp (out_file, "-", 1) == 0 )
+	if ( (out_file == NULL) || strncmp (out_file, "-", 1) == 0 ) {
 		/* use stdout */
 		out_fp = stdout;
-	else
-		{
+	} else {
 		/* open the file pointer for writing */
 		out_fp = fopen(out_file, "w+");
-		if ( out_fp == NULL )
+		if ( out_fp == NULL ) {
 			pcaptxt_error (-1, "Error opening %s: %s\n", out_file, my_strerror(errno));
 		}
+	}
 
 
 	/* initialize state */
@@ -1052,42 +1050,45 @@ void ascii_to_pcap(char *in_file, char *out_file)
 
 
 	/* read line, put line */
-	while (!feof(in_fp) && my_getln(in_fp, &line, &len) && ++line_number)
-		{
+	while (!feof(in_fp) && my_getln(in_fp, &line, &len) && ++line_number) {
 		/* consume all initial blanks */
-		while ( isspace(line[0]) ) { ++line; --len; }
+		while ( isspace(line[0]) ) {
+			++line;
+			--len;
+		}
 
-		if ( immediate_mode && len == 0 )
+		if ( immediate_mode && len == 0 ) {
 			/* an empty line in immediate mode implies a packet end */
 			pcap_put_packet(packet, out_fp);
+		}
 
 		/* consume line */
-		while ( len > 0 )
-			{
+		while ( len > 0 ) {
 			/* consume all initial blanks */
-			while ( isspace(line[0]) ) { ++line; --len; }
+			while ( isspace(line[0]) ) {
+				++line;
+				--len;
+			}
 
 			/* skip comment lines */
-			if ( line[0] == '#' )
+			if ( line[0] == '#' ) {
 				continue;
+			}
 
 			/* get a value pair */
 			line_state = txt_get_pair(line, line_state, &left, &right, &remaining);
-			switch ( line_state )
-				{
+			switch ( line_state ) {
 				case TYPE_FULL:
 					/* coalesce label */
-					if ( left.l > 0 )
-						{
+					if ( left.l > 0 ) {
 						string_append(&rem_label, &left);
 						string_reset(&left);
-						}
+					}
 					/* coalesce contents */
-					if ( right.l > 0 )
-						{
+					if ( right.l > 0 ) {
 						string_append(&rem_contents, &right);
 						string_reset(&right);
-						}
+					}
 					/* full pair */
 					txt_get_dispatch(&rem_label, &rem_contents, packet);
 					line_state = TYPE_EMPTY;
@@ -1097,55 +1098,49 @@ void ascii_to_pcap(char *in_file, char *out_file)
 
 				case TYPE_RIGHT:
 					/* coalesce label */
-					if ( left.l > 0 )
-						{
+					if ( left.l > 0 ) {
 						string_append(&rem_label, &left);
 						string_reset(&left);
-						}
+					}
 					/* coalesce contents */
-					if ( right.l > 0 )
-						{
+					if ( right.l > 0 ) {
 						string_append(&rem_contents, &right);
 						string_reset(&right);
-						}
+					}
 					/* set state straigth */
 					line_state = TYPE_RIGHT;
 					break;
 
 				case TYPE_LEFT:
 					/* coalesce label */
-					if ( left.l > 0 )
-						{
+					if ( left.l > 0 ) {
 						string_append(&rem_label, &left);
 						string_reset(&left);
-						}
+					}
 					/* set state straigth */
 					line_state = TYPE_LEFT;
 					break;
-				}
+			}
 
 			/* get remaining string in the line */
 			line = remaining.s;
 			len = remaining.l;
-			}
 		}
+	}
 
 
 	/* consume dangling line */
-	if ( line_state == TYPE_RIGHT )
-		{
+	if ( line_state == TYPE_RIGHT ) {
 		/* coalesce label */
-		if ( left.l > 0 )
-			{
+		if ( left.l > 0 ) {
 			string_append(&rem_label, &left);
 			string_reset(&left);
-			}
+		}
 		/* coalesce contents */
-		if ( right.l > 0 )
-			{
+		if ( right.l > 0 ) {
 			string_append(&rem_contents, &right);
 			string_reset(&right);
-			}
+		}
 		/* set state straigth */
 		line_state = TYPE_FULL;
 		/* full pair */
@@ -1153,7 +1148,7 @@ void ascii_to_pcap(char *in_file, char *out_file)
 		line_state = TYPE_EMPTY;
 		string_reset(&rem_label);
 		string_reset(&rem_contents);
-		}
+	}
 
 	/* dispatch dangling packet */
 	pcap_put_packet(packet, out_fp);
@@ -1162,8 +1157,9 @@ void ascii_to_pcap(char *in_file, char *out_file)
 	fclose(in_fp);
 
 	/* close output */
-	if ( vim_mode && (last_char[0] == '\n') )
+	if ( vim_mode && (last_char[0] == '\n') ) {
 		(void) do_fwrite (out_fp, (uint8_t *)last_char, 1);
+	}
 	fclose(out_fp);
 
 	return;
@@ -1181,8 +1177,9 @@ void pcaptxt_error (int code, char *str, ...)
 	va_end(ap);
 
 	/* exit if requested */
-	if ( code != 0 )
+	if ( code != 0 ) {
 		exit(code);
+	}
 
 	return;
 }
@@ -1241,17 +1238,15 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 	memcpy ((void *)&packet->buffer, pkt, htonl(packet->frame.caplen));
 
 	/* get l2 header */
-	if ( pcap_get_l2(packet) < 0 )
-		{
+	if ( pcap_get_l2(packet) < 0 ) {
 		/* no known L2 packet */
 		fprintf (stderr, "Error [%s]: Invalid L2 packet\n", __func__);
 		exit(-1);
-		}
+	}
 	pi += packet->l2_hlen;
 
 	/* get L3 header */
-	switch ( packet->l3_proto )
-		{
+	switch ( packet->l3_proto ) {
 		case ETH_P_IP:
 			/* get IP header */
 			(void) pcap_get_ip(packet);
@@ -1265,15 +1260,13 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 		default:
 			(void) pcap_get_l3(packet);
 			break;
-		}
+	}
 	pi += packet->l3_hlen;
 
 	/* get L4 header */
-	if ( packet->l4_len > 0 )
-		{
+	if ( packet->l4_len > 0 ) {
 		/* dump transport header */
-		switch ( packet->l4_proto )
-			{
+		switch ( packet->l4_proto ) {
 			case IPPROTO_TCP:
 				/* get TCP header */
 				(void) pcap_get_tcp(packet);
@@ -1294,9 +1287,9 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 			default:
 				(void) pcap_get_l4(packet);
 				break;
-			}
-		pi += packet->l4_hlen;
 		}
+		pi += packet->l4_hlen;
+	}
 
 	/* get L7 contents */
 	packet->l7_len = packet->l4_len - packet->l4_hlen;
@@ -1308,8 +1301,9 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 	pi += packet->rem_len;
 
 	/* put packet if it exists */
-	if ( packet->valid )
+	if ( packet->valid ) {
 		(void) txt_put_packet(out_fp, packet);
+	}
 
 	return;
 }
@@ -1337,8 +1331,7 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 	int i, len;
 
 
-	if (filename[0] == '-' && filename[1] == '\0')
-		{
+	if (filename[0] == '-' && filename[1] == '\0') {
 		/* fpeek header bytes from stdin */
 		fp = stdin;
 		/*
@@ -1350,59 +1343,55 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 		 *       Moreover, some OSs consider lines as flush stdin points, so
 		 *       that ungetc() does not work after popping a '\n' char.
 		 */
-		for (i=0; i<(int)sizeof(struct pcap_file_header); ++i)
+		for (i=0; i<(int)sizeof(struct pcap_file_header); ++i) {
 			buffer[i] = fgetc(stdin);
-		for (i=sizeof(struct pcap_file_header)-1; i>=0; --i)
+		}
+		for (i=sizeof(struct pcap_file_header)-1; i>=0; --i) {
 			/*
 			 * \note It is important for buffer to be cast to unsigned char
 			 * See http://gcc.gnu.org/ml/gcc-patches/2000-02/msg00873.html
 			 */
 			(void)ungetc(buffer[i],stdin);
 		}
-	else
-		{
+	} else {
 		/* open the file */
-		if ( (fp = fopen(filename, "r")) == NULL )
-			{
+		if ( (fp = fopen(filename, "r")) == NULL ) {
 			/* invalid trace file */
 			fprintf (stderr, "Error [%s]: can't open trace file %s\n", __func__,
 					filename);
 			exit(-1);
-			}
+		}
 		/* read the header bytes */
 		len = fread(buffer, sizeof(struct pcap_file_header), 1, fp);
-		if (len != 1)
-			{
+		if (len != 1) {
 			/* invalid read */
 			fprintf (stderr, "Error [%s]: read %i bytes of pcap_file_header\n",
 					__func__, len);
 			exit(-1);
-			}
 		}
+	}
 
 
 	/* memcpy the file header */
 	memcpy ((void *)hdr, buffer, sizeof(struct pcap_file_header));
 
 	/* check trace and endianism */
-	if ( htonl(hdr->magic) == TCPDUMP_MAGIC )
+	if ( htonl(hdr->magic) == TCPDUMP_MAGIC ) {
 		/* this trace is written in right (big-endian) format */
 		little_endian = 0;
-	else if ( htonl(swapl(hdr->magic)) == TCPDUMP_MAGIC )
+	} else if ( htonl(swapl(hdr->magic)) == TCPDUMP_MAGIC ) {
 		/* this trace was written in wrong (little-endian) format */
 		little_endian = 1;
-	else
-		{
+	} else {
 		/* invalid trace file */
 		fprintf (stderr, "Error [%s]: Invalid trace file %s (begins with 0x%08x)\n",
 				__func__, filename, hdr->magic);
 		exit(-1);
-		}
+	}
 
 
 	/* we keep all data in network order */
-	if ( little_endian )
-		{
+	if ( little_endian ) {
 		/* this trace was written in wrong (little-endian) format */
 		hdr->magic = htonl(hdr->magic);
 		hdr->version_major = htons(hdr->version_major);
@@ -1411,11 +1400,12 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 		hdr->sigfigs = htonl(hdr->sigfigs);
 		hdr->snaplen = htonl(hdr->snaplen);
 		hdr->linktype = htonl(hdr->linktype);
-		}
+	}
 
-	if ( fp != stdin )
+	if ( fp != stdin ) {
 		/* close the file */
 		fclose(fp);
+	}
 
 	return 0;
 }
@@ -1434,9 +1424,10 @@ int pcap_get_frame (const struct pcap_pkthdr *hdr, packet_t* packet)
 	/* ensure packet is not larger than the buffer */
 	caplen = hdr->caplen;
 	caplen = MIN(caplen, MAX_PACKET_LENGTH);
-	if ( hdr->caplen > MAX_PACKET_LENGTH )
+	if ( hdr->caplen > MAX_PACKET_LENGTH ) {
 		fprintf (stderr, "Error [%s]: L2 packet too big (%i)\n", __func__,
 				hdr->caplen);
+	}
 	packet->frame.caplen = ntohl(caplen);
 
 	/* mark the packet as valid */
@@ -1464,8 +1455,7 @@ int pcap_get_l2(packet_t *packet)
 	packet->l2_hlen = MAX(packet->l2_hlen, 0);
 
 	/* check if we know how to interpret the L2 */
-	switch (ntohl(file_hdr.linktype))
-		{
+	switch (ntohl(file_hdr.linktype)) {
 		case DLT_EN10MB:
 			{
 			/* ethernet headers are easy to interpret */
@@ -1490,7 +1480,7 @@ int pcap_get_l2(packet_t *packet)
 			/* unknown structure datalink: won't try to interpret it */
 			packet->l3_proto = ETH_P_IP;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -1543,14 +1533,13 @@ int pcap_get_ip (packet_t* packet)
 			 *    including internet header and data." */
 			(ntohs(packet->ip->ip_len) < sizeof(struct ip)) ||
 			/* we need a full IP header (cut options are OK) */
-			((packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen)) )
-		{
+			((packet->l2_hlen + sizeof(struct ip)) > ntohl(packet->frame.caplen)) ) {
 		packet->l3_proto = -1;
 		packet->ip = NULL;
 		packet->ip_opts = NULL;
 		(void)pcap_get_l3(packet);
 		return -1;
-		}
+	}
 
 	/* get IP header length */
 	packet->l3_hlen = (packet->ip->ip_hl<<2);
@@ -1563,8 +1552,9 @@ int pcap_get_ip (packet_t* packet)
 	packet->ip_optlen = MIN(packet->ip_optlen, htonl(packet->frame.caplen) -
 			packet->l2_hlen - (int)sizeof(struct ip));
 	packet->ip_optlen = MAX(packet->ip_optlen, 0);
-	if ( packet->ip_optlen == 0 )
+	if ( packet->ip_optlen == 0 ) {
 		packet->ip_opts = NULL;
+	}
 
 	/* get the actual l3_len in the packet */
 	packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
@@ -1589,19 +1579,19 @@ int pcap_get_ip (packet_t* packet)
 	 *       thing in TCP traffic.
 	 */
 	/* deal with IP offset fragments */
-	if ( (ntohs(packet->ip->ip_off) & 0x1fff) != 0 )
-		{
+	if ( (ntohs(packet->ip->ip_off) & 0x1fff) != 0 ) {
 		/* this is a fragment, but not the first one: assume no L4 contents */
 		packet->l4_len = 0;
 		packet->l7_len = packet->l3_len - packet->l3_hlen;
 		return 0;
-		}
+	}
 
 #if 0
 			/* check for IP fragment MF */
-			if ( (ntohs(packet->ip->ip_off) & 0x2000) != 0 )
+			if ( (ntohs(packet->ip->ip_off) & 0x2000) != 0 ) {
 				/* this is the first fragment: assume remaining data is IP length */
 				packet->l3_len = htonl(packet->frame.caplen) - packet->l2_hlen;
+			}
 #endif
 
 	/* start assuming everything else is L4 */
@@ -1674,14 +1664,13 @@ int pcap_get_tcp (packet_t* packet)
 			((packet->tcp->th_off << 2) < (u_int8_t)sizeof(struct tcphdr)) ||
 			/* we need a full TCP header (cut options are OK) */
 			((packet->l2_hlen + packet->l3_hlen + (u_int8_t)sizeof(struct tcphdr)) >
-					ntohl(packet->frame.caplen)) )
-		{
+					ntohl(packet->frame.caplen)) ) {
 		packet->l4_proto = -1;
 		packet->tcp = NULL;
 		packet->tcp_opts = NULL;
 		(void)pcap_get_l4(packet);
 		return -1;
-		}
+	}
 
 	/* get TCP header length */
 	packet->l4_hlen = packet->l3_len - packet->l3_hlen;
@@ -1695,17 +1684,19 @@ int pcap_get_tcp (packet_t* packet)
 	packet->tcp_optlen = MIN(packet->tcp_optlen, htonl(packet->frame.caplen) -
 			packet->l2_hlen - packet->l3_hlen - (int)sizeof(struct tcphdr));
 	packet->tcp_optlen = MAX(packet->tcp_optlen, 0);
-	if ( packet->tcp_optlen == 0 )
+	if ( packet->tcp_optlen == 0 ) {
 		packet->tcp_opts = NULL;
+	}
 
 	/* get the actual l4_len in the packet */
 	packet->l4_len = packet->l3_len - packet->l3_hlen;
 
 	/* check tcp checksum validity */
-	if ( packet->ip )
+	if ( packet->ip ) {
 		tcp_sum = tcp_checksum((uint8_t *)(packet->ip));
-	else if ( packet->ip6 )
+	} else if ( packet->ip6 ) {
 		tcp_sum = tcp_checksum((uint8_t *)(packet->ip6));
+	}
 
 	packet->tcp_sum_valid = (packet->tcp->th_sum == tcp_sum) ? 1 : 0;
 
@@ -1779,10 +1770,11 @@ int pcap_get_rem (packet_t* packet)
 			packet->l3_len;
 
 	/* point rem header pointer */
-	if ( packet->rem_len == 0 )
+	if ( packet->rem_len == 0 ) {
 		packet->rem = NULL;
-	else
+	} else {
 		packet->rem = packet->buffer + packet->l2_hlen + packet->l3_len;
+	}
 
 	return 0;
 }
@@ -1803,10 +1795,11 @@ char *sprintf_string(string_t *str)
 
 int getxvalue(char c)
 {
-	if ( isdigit(c) )
+	if ( isdigit(c) ) {
 		return c - '0';
-	else
+	} else {
 		return (10 + tolower(c) - 'a');
+	}
 }
 
 
@@ -1815,12 +1808,15 @@ int look_for_string(char **haystack, char *needle)
 {
 	int i;
 
-	for (i=0; haystack[i] != NULL; ++i)
-		if ( strcasecmp(haystack[i], needle) == 0 )
+	for (i=0; haystack[i] != NULL; ++i) {
+		if ( strcasecmp(haystack[i], needle) == 0 ) {
 			break;
+		}
+	}
 
-	if ( haystack[i] == NULL )
+	if ( haystack[i] == NULL ) {
 		return -1;
+	}
 
 	return i;
 }
@@ -1886,8 +1882,9 @@ char *encode_string (unsigned char *pkt, int len)
 	int pi = 0;
 	int bi = 0;
 
-	for (pi=0; pi<len;++pi)
+	for (pi=0; pi<len;++pi) {
 		bi += sprintf(buf+bi, "\\x%02x", pkt[pi]);
+	}
 
 	/* terminate string */
 	buf[bi++] = '\0';
@@ -1915,10 +1912,8 @@ char *escape_string (unsigned char *pkt, int len)
 	int pi = 0;
 	int bi = 0;
 
-	for (pi=0; pi<len;++pi)
-		{
-		switch (pkt[pi])
-			{
+	for (pi=0; pi<len;++pi) {
+		switch (pkt[pi]) {
 			/* escape char (short) */
 			case ' ': bi += sprintf(buf+bi, "\\ "); break; /* space */
 			case '\0': bi += sprintf(buf+bi, "\\0"); break; /* null */
@@ -1929,14 +1924,15 @@ char *escape_string (unsigned char *pkt, int len)
 			default:
 				/* escape non-printable and forbidden chars (long) */
 				if ( (pkt[pi] < 32) || (pkt[pi] > 126) ||
-						(pkt[pi] == SEP_FIELD) || (pkt[pi] == SEP_ENTRY) )
+						(pkt[pi] == SEP_FIELD) || (pkt[pi] == SEP_ENTRY) ) {
 					/* escape char */
 					bi += sprintf(buf+bi, "\\x%02x", pkt[pi]);
-				else
+				} else {
 					/* copy char */
 					buf[bi++] = pkt[pi];
 				}
-		}
+			}
+	}
 
 	/* terminate string */
 	buf[bi++] = '\0';
@@ -1970,42 +1966,40 @@ int unescape_string (char *sin, int sinlen, char* buf, int buflen)
 	int si = 0;
 	int bi = 0;
 
-	for (si=0; sin[si]!='\0' && (sinlen == -1 || si<sinlen) && bi<buflen;)
-		{
-		if ( (sin[si] == '\\') && (sin[si+1] == ' ') && ++si && ++si )
+	for (si=0; sin[si]!='\0' && (sinlen == -1 || si<sinlen) && bi<buflen;) {
+		if ( (sin[si] == '\\') && (sin[si+1] == ' ') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = ' ';
-		else if ( (sin[si] == '\\') && (sin[si+1] == '0') && ++si && ++si )
+		} else if ( (sin[si] == '\\') && (sin[si+1] == '0') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = '\0';
-		else if ( (sin[si] == '\\') && (sin[si+1] == 'r') && ++si && ++si )
+		} else if ( (sin[si] == '\\') && (sin[si+1] == 'r') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = '\r';
-		else if ( (sin[si] == '\\') && (sin[si+1] == 'n') && ++si && ++si )
+		} else if ( (sin[si] == '\\') && (sin[si+1] == 'n') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = '\n';
-		else if ( (sin[si] == '\\') && (sin[si+1] == 't') && ++si && ++si )
+		} else if ( (sin[si] == '\\') && (sin[si+1] == 't') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = '\t';
-		else if ( (sin[si] == '\\') && (sin[si+1] == '\\') && ++si && ++si )
+		} else if ( (sin[si] == '\\') && (sin[si+1] == '\\') && ++si && ++si ) {
 			/* unescape char (short) */
 			buf[bi++] = '\\';
-		else if ( (sin[si] == '\\') && (sin[si+1] == 'x') &&
-				(isxdigit(sin[si+2])) && (isxdigit(sin[si+3])) )
-			{
+		} else if ( (sin[si] == '\\') && (sin[si+1] == 'x') &&
+				(isxdigit(sin[si+2])) && (isxdigit(sin[si+3])) ) {
 			/* unescape char (long) */
 			buf[bi] = (getxvalue(sin[si+2])<<4) + getxvalue(sin[si+3]);
 			++bi;
 			si += 4;
-			}
-		else if ( (sin[si] == ' ') || (sin[si] == '\t') || (sin[si] == '\n') ||
-				(sin[si] == '\\') || (sin[si] < 32) || (sin[si] > 126) )
+		} else if ( (sin[si] == ' ') || (sin[si] == '\t') || (sin[si] == '\n') ||
+				(sin[si] == '\\') || (sin[si] < 32) || (sin[si] > 126) ) {
 			/* skip ' ', \t, \n, '\\', and non-printable chars */
 			++si;
-		else
+		} else {
 			/* copy char */
 			buf[bi++] = sin[si++];
 		}
+	}
 
 	/* account for string */
 	buf[MIN(bi,buflen-1)] = '\0';
@@ -2026,8 +2020,7 @@ int unescape_string (char *sin, int sinlen, char* buf, int buflen)
  */
 int getval_string (type_t type, char *str, void *value)
 {
-	switch (type)
-		{
+	switch (type) {
 		case TYPE_STRING:
 			{
 			char **tmp = (char **)value;
@@ -2039,39 +2032,38 @@ int getval_string (type_t type, char *str, void *value)
 			return (sscanf(str, "%i", (int *)value) > 0) ? 0 : -1;
 			break;
 		case TYPE_INTEXT:
-			if ( sscanf(str, "%i", (int *)value) > 0 )
+			if ( sscanf(str, "%i", (int *)value) > 0 ) {
 				return 0;
-			else if ( strncasecmp(KEYWORD_OK, str, strlen(KEYWORD_OK)) == 0 )
-				{
+			} else if ( strncasecmp(KEYWORD_OK, str, strlen(KEYWORD_OK)) == 0 ) {
 				int *tmp = value;
 				*tmp = VALUE_OK;
 				return 1;
-				}
-			else
+			} else {
 				return -1;
+			}
 		case TYPE_UINT:
-			if ( str[0] == '0' && tolower(str[1]) == 'x' )
+			if ( str[0] == '0' && tolower(str[1]) == 'x' ) {
 				return (sscanf(str, "%x", (uint32_t *)value) > 0) ? 0 : -1;
-			else if ( str[0] == '0' && tolower(str[1]) == 'x' )
+			} else if ( str[0] == '0' && tolower(str[1]) == 'x' ) {
 				return (sscanf(str, "%o", (uint32_t *)value) > 0) ? 0 : -1;
-			else
+			} else {
 				return (sscanf(str, "%u", (uint32_t *)value) > 0) ? 0 : -1;
+			}
 			break;
 		case TYPE_UINTEXT:
-			if ( str[0] == '0' && tolower(str[1]) == 'x' )
+			if ( str[0] == '0' && tolower(str[1]) == 'x' ) {
 				return (sscanf(str, "%x", (uint32_t *)value) > 0) ? 0 : -1;
-			else if ( str[0] == '0' && tolower(str[1]) == 'x' )
+			} else if ( str[0] == '0' && tolower(str[1]) == 'x' ) {
 				return (sscanf(str, "%o", (uint32_t *)value) > 0) ? 0 : -1;
-			else if ( sscanf(str, "%u", (uint32_t *)value) > 0 )
+			} else if ( sscanf(str, "%u", (uint32_t *)value) > 0 ) {
 				return 0;
-			else if ( strncasecmp(KEYWORD_OK, str, strlen(KEYWORD_OK)) == 0 )
-				{
+			} else if ( strncasecmp(KEYWORD_OK, str, strlen(KEYWORD_OK)) == 0 ) {
 				int *tmp = value;
 				*tmp = VALUE_OK;
 				return 1;
-				}
-			else
+			} else {
 				return -1;
+			}
 		case TYPE_DOUBLE:
 			return (sscanf(str, "%lf", (double *)value) > 0) ? 0 : -1;
 			break;
@@ -2085,20 +2077,24 @@ int getval_string (type_t type, char *str, void *value)
 			/*(void *)tuvalue = value; */
 			tuvalue = value;
 			dot = index (str, '.');
-			if ( dot == NULL )
+			if ( dot == NULL ) {
 				return -1;
-			if ( snscanf(str, dot-str, "%u", &tuvalue->u1) <= 0 )
+			}
+			if ( snscanf(str, dot-str, "%u", &tuvalue->u1) <= 0 ) {
 				return -1;
-			if ( sscanf(dot+1, "%u", &tuvalue->u2) <= 0 )
+			}
+			if ( sscanf(dot+1, "%u", &tuvalue->u2) <= 0 ) {
 				return -1;
+			}
 			return 0;
 			break;
 			}
 		case TYPE_ETHADDR:
 			{
 			struct ether_addr *tmp = ether_aton(str);
-			if ( tmp == NULL )
+			if ( tmp == NULL ) {
 				return -1;
+			}
  			memcpy(value, tmp, sizeof(struct ether_addr));
 			return 0;
 			break;
@@ -2106,8 +2102,9 @@ int getval_string (type_t type, char *str, void *value)
 		case TYPE_IPADDR:
 			{
 			struct in_addr tmp;
-			if ( inet_aton(str, &tmp) == 0 )
+			if ( inet_aton(str, &tmp) == 0 ) {
 				return -1;
+			}
  			memcpy(value, (void *)&tmp, sizeof(struct in_addr));
 			return 0;
 			break;
@@ -2115,8 +2112,9 @@ int getval_string (type_t type, char *str, void *value)
 		case TYPE_IPADDR6:
 			{
 			struct in6_addr tmp;
-			if ( inet_pton(AF_INET6, str, &tmp) == 0 )
+			if ( inet_pton(AF_INET6, str, &tmp) == 0 ) {
 				return -1;
+			}
  			memcpy(value, (void *)&tmp, sizeof(struct in6_addr));
 			return 0;
 			break;
@@ -2125,10 +2123,8 @@ int getval_string (type_t type, char *str, void *value)
 			{
 			uint32_t flags = 0;
 			int i = 0;
-			while ( str[i] != '\0' )
-				{
-				switch (str[i])
-					{
+			while ( str[i] != '\0' ) {
+				switch (str[i]) {
 					case 'c': flags &= ~(1<<7); break;
 					case 'C': flags |=   1<<7; break;
 					case 'e': flags &= ~(1<<6); break;
@@ -2145,9 +2141,9 @@ int getval_string (type_t type, char *str, void *value)
 					case 'S': flags |=   1<<1; break;
 					case 'f': flags &= ~(1<<0); break;
 					case 'F': flags |=   1<<0; break;
-					}
-					++i;
 				}
+				++i;
+			}
 			*(uint32_t *)value = flags;
 			return 0;
 			break;
@@ -2157,7 +2153,7 @@ int getval_string (type_t type, char *str, void *value)
 					__func__, type);
 			exit(-1);
 			break;
-		}
+	}
 
 	return -1;
 }
@@ -2172,8 +2168,7 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 	txt_put_frame(fp, packet);
 
 	/* dump L2 header */
-	switch (ntohl(file_hdr.linktype))
-		{
+	switch (ntohl(file_hdr.linktype)) {
 		case DLT_EN10MB:
 			txt_put_ethernet(fp, packet);
 			break;
@@ -2181,11 +2176,10 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 			/* unknown structure datalink: won't try to interpret it */
 			txt_put_l2(fp, packet);
 			break;
-		}
+	}
 
 	/* dump l3 header */
-	switch (packet->l3_proto)
-		{
+	switch (packet->l3_proto) {
 		case ETH_P_IP:
 			txt_put_ip(fp, packet);
 			break;
@@ -2197,13 +2191,11 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 		default:
 			txt_put_l3(fp, packet);
 			break;
-		}
+	}
 
-	if ( packet->l4_len > 0 )
-		{
+	if ( packet->l4_len > 0 ) {
 		/* dump L4 header */
-		switch (packet->l4_proto)
-			{
+		switch (packet->l4_proto) {
 			case IPPROTO_TCP:
 				txt_put_tcp(fp, packet);
 				break;
@@ -2218,21 +2210,24 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 			default:
 				txt_put_l4(fp, packet);
 				break;
-			}
 		}
+	}
 
 	/* dump l7 header */
-	if ( packet->l7_len > 0 )
+	if ( packet->l7_len > 0 ) {
 		txt_put_l7(fp, packet);
+	}
 
 	/* dump the remaining data */
-	if ( packet->rem_len > 0 )
+	if ( packet->rem_len > 0 ) {
 		txt_put_rem(fp, packet);
+	}
 
 	txt_put_string(fp, "\n");
 
-	if ( immediate_mode )
+	if ( immediate_mode ) {
 		fflush(fp);
+	}
 
 	return 0;
 }
@@ -2288,21 +2283,23 @@ int txt_put_frame(FILE *fp, packet_t* packet)
 			ntohl(packet->frame.ts.tv_sec), ntohl(packet->frame.ts.tv_usec));
 	/* caplen <> l2_hlen + l3_len + rem_len*/
 	if ( packet->l2_hlen + packet->l3_len + packet->rem_len ==
-			ntohl(packet->frame.caplen) )
+			ntohl(packet->frame.caplen) ) {
 		txt_put_string(fp, "%s%c %s (%i), ", txt_label_frame[2], SEP_FIELD,
 				KEYWORD_OK, ntohl(packet->frame.caplen));
-	else
+	} else {
 		txt_put_string(fp, "%s%c %i, ", txt_label_frame[2], SEP_FIELD,
 				ntohl(packet->frame.caplen));
+	}
 	/* len <> l2_hlen + packet->ip->ip_len*/
 	if ( packet->ip != NULL &&
 			packet->l2_hlen + ntohs(packet->ip->ip_len) + packet->rem_len ==
-					ntohl(packet->frame.len) )
+					ntohl(packet->frame.len) ) {
 		txt_put_string(fp, "%s%c %s (%i)\n", txt_label_frame[3], SEP_FIELD,
 				KEYWORD_OK, ntohl(packet->frame.len));
-	else
+	} else {
 		txt_put_string(fp, "%s%c %i\n", txt_label_frame[3], SEP_FIELD,
 				ntohl(packet->frame.len));
+	}
 
 	return 0;
 }
@@ -2359,14 +2356,15 @@ int txt_put_ip (FILE *fp, packet_t* packet)
 			packet->ip->ip_hl);
 	txt_put_string(fp, "%s%c 0x%02x, ", txt_label_ip_header[2], SEP_FIELD,
 			packet->ip->ip_tos);
-	if ( packet->l3_len == ntohs(packet->ip->ip_len) )
+	if ( packet->l3_len == ntohs(packet->ip->ip_len) ) {
 		/* packet->l3_len is right */
 		txt_put_string(fp, "%s%c %s (%i), ",txt_label_ip_header[3], SEP_FIELD,
 				KEYWORD_OK, ntohs(packet->ip->ip_len));
-	else
+	} else {
 		/* packet->l3_len is wrong */
 		txt_put_string(fp, "%s%c %i, ",txt_label_ip_header[3], SEP_FIELD,
 				ntohs(packet->ip->ip_len));
+	}
 	txt_put_string(fp, "%s%c 0x%04x, ", txt_label_ip_header[4], SEP_FIELD,
 			ntohs(packet->ip->ip_id));
 	txt_put_string(fp, "%s%c %i, ",     txt_label_ip_header[5], SEP_FIELD,
@@ -2382,21 +2380,23 @@ int txt_put_ip (FILE *fp, packet_t* packet)
 	txt_put_string(fp, "%s%c %i, ",     txt_label_ip_header[10], SEP_FIELD,
 			packet->ip->ip_p);
 	/* cksum */
-	if ( packet->ip_sum_valid )
+	if ( packet->ip_sum_valid ) {
 		txt_put_string(fp, "%s%c %s (0x%04x), ",txt_label_ip_header[11], SEP_FIELD,
 				KEYWORD_OK, ntohs(packet->ip->ip_sum));
-	else
+	} else {
 		txt_put_string(fp, "%s%c 0x%04x, ", txt_label_ip_header[11], SEP_FIELD,
 				ntohs(packet->ip->ip_sum));
+	}
 	txt_put_string(fp, "%s%c %s, ",     txt_label_ip_header[12], SEP_FIELD,
 			addr_to_string (packet->ip->ip_src.s_addr));
 	txt_put_string(fp, "%s%c %s",       txt_label_ip_header[13], SEP_FIELD,
 			addr_to_string (packet->ip->ip_dst.s_addr));
 
-	if ( packet->ip_optlen > 0 )
+	if ( packet->ip_optlen > 0 ) {
 		/* dump ip options */
 		txt_put_string(fp, ", %s%c %s", txt_label_ip_header[14], SEP_FIELD,
 				encode_string (packet->ip_opts, packet->ip_optlen));
+	}
 
 	txt_put_string(fp, "\n");
 	return 0;
@@ -2412,14 +2412,15 @@ int txt_put_ip6 (FILE *fp, packet_t* packet)
 
 	txt_put_string(fp, "%s%c 0x%08x, ",     txt_label_ip6_header[0], SEP_FIELD,
 			ntohl(packet->ip6->ip6_flow));
-	if ( packet->l3_len == (sizeof(struct ip6_hdr)+ntohs(packet->ip6->ip6_plen)) )
+	if ( packet->l3_len == (sizeof(struct ip6_hdr)+ntohs(packet->ip6->ip6_plen)) ) {
 		/* packet->l3_len is right */
 		txt_put_string(fp, "%s%c %s (%i), ",txt_label_ip6_header[1], SEP_FIELD,
 				KEYWORD_OK, ntohs(packet->ip6->ip6_plen));
-	else
+	} else {
 		/* packet->l3_len is wrong */
 		txt_put_string(fp, "%s%c %i, ",txt_label_ip6_header[1], SEP_FIELD,
 				ntohs(packet->ip6->ip6_plen));
+	}
 	txt_put_string(fp, "%s%c %i, ",     txt_label_ip6_header[2], SEP_FIELD,
 			packet->ip6->ip6_nxt);
 	txt_put_string(fp, "%s%c %i, ",     txt_label_ip6_header[3], SEP_FIELD,
@@ -2465,22 +2466,24 @@ int txt_put_tcp (FILE *fp, packet_t* packet)
 
 	/* check whether seq/ack are avoidable */
 	seq = seq_check(packet, SEQ);
-	if ( seq == ntohl(packet->tcp->th_seq) )
+	if ( seq == ntohl(packet->tcp->th_seq) ) {
+		/* valid value */
 		txt_put_string(fp, "%s%c %s (0x%08x), ",txt_label_tcp_header[2], SEP_FIELD,
 				KEYWORD_OK, ntohl(packet->tcp->th_seq));
-	else
+	} else {
 		txt_put_string(fp, "%s%c 0x%08x, ",     txt_label_tcp_header[2], SEP_FIELD,
 				ntohl(packet->tcp->th_seq));
-		/* valid value */
+	}
 
 	ack = seq_check(packet, ACK);
-	if ( ack == ntohl(packet->tcp->th_ack) )
+	if ( ack == ntohl(packet->tcp->th_ack) ) {
 		/* valid value */
 		txt_put_string(fp, "%s%c %s (0x%08x), ",txt_label_tcp_header[3], SEP_FIELD,
 				KEYWORD_OK, ntohl(packet->tcp->th_ack));
-	else
+	} else {
 		txt_put_string(fp, "%s%c 0x%08x, ",     txt_label_tcp_header[3], SEP_FIELD,
 				ntohl(packet->tcp->th_ack));
+	}
 
 	txt_put_string(fp, "%s%c %i, ",           txt_label_tcp_header[4], SEP_FIELD,
 			packet->tcp->th_off);
@@ -2497,19 +2500,21 @@ int txt_put_tcp (FILE *fp, packet_t* packet)
 			(((packet->tcp->th_flags>>0)&0x1) != 0) ? 'F' : 'f');
 	txt_put_string(fp, "%s%c %i, ",           txt_label_tcp_header[7], SEP_FIELD,
 			ntohs(packet->tcp->th_win));
-	if ( packet->tcp_sum_valid )
+	if ( packet->tcp_sum_valid ) {
 		txt_put_string(fp, "%s%c %s (0x%04x), ",txt_label_tcp_header[8], SEP_FIELD,
 				KEYWORD_OK, ntohs(packet->tcp->th_sum));
-	else
+	} else {
 		txt_put_string(fp, "%s%c 0x%04x, ",     txt_label_tcp_header[8], SEP_FIELD,
 				ntohs(packet->tcp->th_sum));
+	}
 	txt_put_string(fp, "%s%c %i",             txt_label_tcp_header[9], SEP_FIELD,
 			ntohs(packet->tcp->th_urp));
 
-	if ( packet->tcp_optlen > 0 )
+	if ( packet->tcp_optlen > 0 ) {
 		/* dump tcp options */
 		txt_put_string(fp, ", %s%c %s", txt_label_tcp_header[10], SEP_FIELD,
 				encode_string (packet->tcp_opts, packet->tcp_optlen));
+	}
 
 	txt_put_string(fp, "\n");
 	return 0;
@@ -2585,8 +2590,7 @@ int pcap_put_file_header (FILE *fp, struct pcap_file_header *hdr)
 {
 	int len;
 
-	if ( little_endian )
-		{
+	if ( little_endian ) {
 		/* write this trace in little endian format */
 		struct pcap_file_header hdr2;
 		hdr2.magic = swapl(hdr->magic);
@@ -2597,7 +2601,7 @@ int pcap_put_file_header (FILE *fp, struct pcap_file_header *hdr)
 		hdr2.snaplen = swapl(hdr->snaplen);
 		hdr2.linktype = swapl(hdr->linktype);
 		hdr = &hdr2;
-		}
+	}
 
 	/* dump file info */
 	len = sizeof(struct pcap_file_header);
@@ -2611,15 +2615,15 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 	char buffer[MAX_PACKET_LENGTH];
 	int bi = 0;
 
-	if ( !packet->valid )
+	if ( !packet->valid ) {
 		return;
+	}
 
 	bi += pcap_put_frame(buffer+bi, packet);
 	bi += pcap_put_l2(buffer+bi, packet);
 
 	/* dump L3 header */
-	switch (packet->l3_proto)
-		{
+	switch (packet->l3_proto) {
 		case ETH_P_IP:
 			bi += pcap_put_ip(buffer+bi, packet);
 			break;
@@ -2631,13 +2635,11 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 		default:
 			bi += pcap_put_l3(buffer+bi, packet);
 			break;
-		}
+	}
 
-	if ( packet->l4_hlen > 0 )
-		{
+	if ( packet->l4_hlen > 0 ) {
 		/* dump L4 header */
-		switch (packet->l4_proto)
-			{
+		switch (packet->l4_proto) {
 			case IPPROTO_TCP:
 				bi += pcap_put_tcp(buffer+bi, packet); break;
 			case IPPROTO_UDP:
@@ -2649,8 +2651,8 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 			default:
 				bi += pcap_put_l4(buffer+bi, packet);
 				break;
-			}
 		}
+	}
 
 	bi += pcap_put_l7(buffer+bi, packet);
 	bi += pcap_put_rem(buffer+bi, packet);
@@ -2659,13 +2661,12 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 	pcap_postprocess_packet(buffer, packet);
 
 	/* write the packet to the file descriptor */
-	if ( do_fwrite (fp, (uint8_t *)buffer, bi) < 0 )
-		{
+	if ( do_fwrite (fp, (uint8_t *)buffer, bi) < 0 ) {
 		/* invalid write */
 		fprintf (stderr, "Error [%s]: cannot write on fp (%s)\n",
 				__func__, my_strerror(errno));
 		exit(-1);
-		}
+	}
 
 	/* count the packet */
 	++packet_counter;
@@ -2694,101 +2695,95 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 	packet->l3_len = packet->l3_hlen + packet->l4_hlen + packet->l7_len;
 
 	/* fix ip.ip_len */
-	if ( packet->ip && ntohs(packet->ip->ip_len) == (uint16_t)VALUE_OK )
-		{
+	if ( packet->ip && ntohs(packet->ip->ip_len) == (uint16_t)VALUE_OK ) {
 		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen + 2);
 		packet->ip->ip_len = htons(packet->l3_len);
 		*ptr = packet->ip->ip_len;
-		}
+	}
 
 	/* fix ip6.ip6_plen */
-	if ( packet->ip6 && ntohs(packet->ip6->ip6_plen) == (uint16_t)VALUE_OK )
-		{
+	if ( packet->ip6 && ntohs(packet->ip6->ip6_plen) == (uint16_t)VALUE_OK ) {
 		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen + 4);
 		packet->ip6->ip6_plen = htons(packet->l3_len - packet->l3_hlen);
 		*ptr = packet->ip6->ip6_plen;
-		}
+	}
 
 	/* fix frame.caplen */
-	if ( ntohl(packet->frame.caplen) == (uint32_t)VALUE_OK )
-		{
+	if ( ntohl(packet->frame.caplen) == (uint32_t)VALUE_OK ) {
 		uint32_t *ptr = (uint32_t *)(buffer + 8);
 		packet->frame.caplen = htonl(packet->l2_hlen + packet->l3_len +
 				packet->rem_len);
-		if ( little_endian )
+		if ( little_endian ) {
 			/* write this trace in little endian format */
 			*ptr = swapl(packet->frame.caplen);
-		else
+		} else {
 			*ptr = packet->frame.caplen;
 		}
+	}
 
 	/* fix frame.len */
-	if ( ntohl(packet->frame.len) == (uint32_t)VALUE_OK )
-		{
+	if ( ntohl(packet->frame.len) == (uint32_t)VALUE_OK ) {
 		uint32_t *ptr = (uint32_t *)(buffer + 12);
 		packet->frame.len = htonl(packet->l2_hlen + ntohs(packet->ip->ip_len) +
 				packet->rem_len);
-		if ( little_endian )
+		if ( little_endian ) {
 			/* write this trace in little endian format */
 			*ptr = swapl(packet->frame.len);
-		else
+		} else {
 			*ptr = packet->frame.len;
 		}
+	}
 
 	/* fix/store tcp.th_seq */
-	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP)
-		{
+	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP) {
 		uint32_t seq;
 		uint32_t *ptr;
 
 		seq = seq_check(packet, SEQ);
-		if ( ntohl(packet->tcp->th_seq) == (uint32_t)VALUE_OK )
-			{
-			if ( seq == ntohl((uint32_t)VALUE_OK) )
+		if ( ntohl(packet->tcp->th_seq) == (uint32_t)VALUE_OK ) {
+			if ( seq == ntohl((uint32_t)VALUE_OK) ) {
 				/* raise a warning */
 				fprintf (stderr, "Error [%s]: couldn't resolve seq number\n", 
 						__func__);
+			}
 			ptr = (uint32_t *)(buffer + fh_len + packet->l2_hlen + packet->l3_hlen + 4);
 			packet->tcp->th_seq = ntohl(seq);
 			*ptr = packet->tcp->th_seq;
-			}
 		}
+	}
 
 	/* fix tcp.th_ack */
-	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP)
-		{
+	if (seq_table_enabled && packet->tcp && packet->l4_proto == IPPROTO_TCP) {
 		uint32_t ack;
 		uint32_t *ptr;
 
 		ack = seq_check(packet, ACK);
-		if ( ntohl(packet->tcp->th_ack) == (uint32_t)VALUE_OK )
-			{
-			if ( ack == ntohl((uint32_t)VALUE_OK) )
+		if ( ntohl(packet->tcp->th_ack) == (uint32_t)VALUE_OK ) {
+			if ( ack == ntohl((uint32_t)VALUE_OK) ) {
 				/* raise a warning */
 				fprintf (stderr, "Error [%s]: couldn't resolve ack number\n", 
 						__func__);
+			}
 			ptr = (uint32_t *)(buffer + fh_len + packet->l2_hlen + packet->l3_hlen + 8);
 			packet->tcp->th_ack = ntohl(ack);
 			*ptr = packet->tcp->th_ack;
-			}
 		}
+	}
 
 	/* fix ip cksum */
-	if ( packet->ip && packet->ip_sum_valid )
-		{
+	if ( packet->ip && packet->ip_sum_valid ) {
 		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen + 10);
 		packet->ip->ip_sum = ip_checksum ((uint8_t *)(packet->ip));
 		*ptr = packet->ip->ip_sum;
-		}
+	}
 
 	/* fix tcp cksum */
-	if ( packet->tcp && packet->tcp_sum_valid )
-		{
+	if ( packet->tcp && packet->tcp_sum_valid ) {
 		uint16_t *ptr = (uint16_t *)(buffer + fh_len + packet->l2_hlen +
 				packet->l3_hlen + 16);
 		packet->tcp->th_sum = tcp_checksum ((uint8_t *)(packet->ip));
 		*ptr = packet->tcp->th_sum;
-		}
+	}
 
 	/* fix udp cksum */
 	/* XXX should we? */
@@ -2802,8 +2797,7 @@ int pcap_put_frame (char *buf, packet_t *packet)
 {
 	struct pcaptxt_pkthdr *frame = &packet->frame;
 
-	if ( little_endian )
-		{
+	if ( little_endian ) {
 		/* write this trace in little endian format */
 		struct pcaptxt_pkthdr frame2;
 		frame2.len = swapl(frame->len);
@@ -2811,7 +2805,7 @@ int pcap_put_frame (char *buf, packet_t *packet)
 		frame2.ts.tv_sec = swapl(frame->ts.tv_sec);
 		frame2.ts.tv_usec = swapl(frame->ts.tv_usec);
 		frame = &frame2;
-		}
+	}
 
 
 	/* dump packet frame */
@@ -2828,8 +2822,9 @@ int pcap_put_frame (char *buf, packet_t *packet)
 
 int pcap_put_l2 (char *buf, packet_t *packet)
 {
-	if ( packet->l2_hlen > 0 )
+	if ( packet->l2_hlen > 0 ) {
 		memcpy(buf, packet->l2, packet->l2_hlen);
+	}
 	return packet->l2_hlen;
 }
 
@@ -2837,8 +2832,9 @@ int pcap_put_l2 (char *buf, packet_t *packet)
 
 int pcap_put_l3 (char *buf, packet_t *packet)
 {
-	if ( packet->l3_hlen > 0 )
+	if ( packet->l3_hlen > 0 ) {
 		memcpy(buf, packet->l3, packet->l3_hlen);
+	}
 	return packet->l3_hlen;
 }
 
@@ -2849,17 +2845,19 @@ int pcap_put_ip (char *buf, packet_t *packet)
 	int len;
 
 	/* check ip header */
-	if ( packet->ip->ip_v != 4 )
+	if ( packet->ip->ip_v != 4 ) {
 		/* we only know how to process IPv4 */
 		return 0;
+	}
 
 	/* dump ip header */
 	len = sizeof(struct ip);
 	memcpy(buf, (uint8_t *)(packet->ip), len);
 
 	/* dump ip options */
-	if ( packet->ip_optlen > 0 )
+	if ( packet->ip_optlen > 0 ) {
 		memcpy(buf+len, packet->ip_opts, packet->ip_optlen);
+	}
 
 	return len + packet->ip_optlen;
 }
@@ -2871,9 +2869,10 @@ int pcap_put_ip6 (char *buf, packet_t *packet)
 	int len;
 
 	/* check ip header */
-	if ( ((ntohl(packet->ip6->ip6_flow) & 0xf0000000)>>28) != 6 )
+	if ( ((ntohl(packet->ip6->ip6_flow) & 0xf0000000)>>28) != 6 ) {
 		/* we only know how to process IPv6 */
 		return 0;
+	}
 
 	/* dump ip header */
 	len = sizeof(struct ip6_hdr);
@@ -2886,8 +2885,9 @@ int pcap_put_ip6 (char *buf, packet_t *packet)
 
 int pcap_put_l4 (char *buf, packet_t *packet)
 {
-	if ( packet->l4_hlen > 0 )
+	if ( packet->l4_hlen > 0 ) {
 		memcpy(buf, packet->l4, packet->l4_hlen);
+	}
 	return packet->l4_hlen;
 }
 
@@ -2902,8 +2902,9 @@ int pcap_put_tcp (char *buf, packet_t *packet)
 	memcpy(buf, (uint8_t *)(packet->tcp), len);
 
 	/* dump tcp options */
-	if ( packet->tcp_optlen > 0 )
+	if ( packet->tcp_optlen > 0 ) {
 		memcpy(buf+len, packet->tcp_opts, packet->tcp_optlen);
+	}
 
 	return len + packet->tcp_optlen;
 }
@@ -2931,8 +2932,9 @@ int pcap_put_icmp (char *buf, packet_t *packet)
 int pcap_put_l7 (char *buf, packet_t *packet)
 {
 	/* dump L7 header */
-	if ( packet->l7_len > 0 )
+	if ( packet->l7_len > 0 ) {
 		memcpy(buf, packet->l7, packet->l7_len);
+	}
 	return packet->l7_len;
 }
 
@@ -2941,8 +2943,9 @@ int pcap_put_l7 (char *buf, packet_t *packet)
 int pcap_put_rem (char *buf, packet_t *packet)
 {
 	/* dump rem header */
-	if ( packet->rem_len > 0 )
+	if ( packet->rem_len > 0 ) {
 		memcpy(buf, packet->rem, packet->rem_len);
+	}
 	return packet->rem_len;
 }
 
@@ -2954,33 +2957,35 @@ int txt_get_change_state(int cur, char *buf, packet_t* packet)
 	int next;
 
 	/* get the new state */
-	for (next=0;valid_states_s[next] != NULL;++next)
-		if (strcasecmp(valid_states_s[next], buf) == 0 )
+	for (next=0;valid_states_s[next] != NULL;++next) {
+		if (strcasecmp(valid_states_s[next], buf) == 0 ) {
 			/* got the state */
 			break;
+		}
+	}
 
-	if ( valid_states_s[next] == NULL )
-		{
+	if ( valid_states_s[next] == NULL ) {
 		/* invalid state */
 		fprintf (stderr, "Error [%s]: invalid header string in line %i (%s)\n",
 				__func__, line_number, buf);
 		exit(-1);
-		}
+	}
 
-	if ( cur == HEADER_INIT && next != HEADER_FILE )
-		{
+	if ( cur == HEADER_INIT && next != HEADER_FILE ) {
 		/* invalid first header */
 		fprintf(stderr, "Error [%s]: invalid file format\n", __func__);
 		exit(-1);
-		}
+	}
 
-	if ( cur == HEADER_FILE && next != HEADER_FILE )
+	if ( cur == HEADER_FILE && next != HEADER_FILE ) {
 		/* commit file header */
 		pcap_put_file_header(out_fp, &file_hdr);
+	}
 
-	if ( cur != HEADER_FILE && next == HEADER_FRAME )
+	if ( cur != HEADER_FILE && next == HEADER_FRAME ) {
 		/* commit last modified packet */
 		pcap_put_packet(packet, out_fp);
+	}
 
 	/* check whether the new state is valid */
 	if ( (cur == HEADER_INIT && next == HEADER_FILE) ||
@@ -3002,16 +3007,15 @@ int txt_get_change_state(int cur, char *buf, packet_t* packet)
 			(cur == HEADER_IP6 && next == HEADER_UDP) ||
 			(cur == HEADER_IP6 && next == HEADER_ICMP) ||
 			(cur != HEADER_INIT && next == HEADER_L7) ||
-			(cur != HEADER_INIT && next == HEADER_REM) )
+			(cur != HEADER_INIT && next == HEADER_REM) ) {
 		/* good transition */
 		(void)1;
-	else
-		{
+	} else {
 		/* invalid transition */
 		fprintf (stderr, "Error [%s]: invalid state transition in line %i (%s -> %s)\n",
 				__func__, line_number, valid_states_s[cur], valid_states_s[next]);
 		exit(-1);
-		}
+	}
 
 	return next;
 }
@@ -3026,76 +3030,70 @@ int txt_get_pair(char *line, int state, string_t *left, string_t *right,
 	right->l = 0;
 	rem->l = 0;
 
-	if ( state == TYPE_RIGHT )
-		{
+	if ( state == TYPE_RIGHT ) {
 		/* if there's a single field sep. in the line, this is an inherited rem */
-		if ( index(line, SEP_FIELD) != NULL )
-			{
+		if ( index(line, SEP_FIELD) != NULL ) {
 			rem->s = line;
 			rem->l = strlen(line);
 			return TYPE_FULL;
-			}
-		else
+		} else {
 			/* otherwise skip left analysis */
 			(void) 1;
 		}
-	else
-		{
+	} else {
 		left->s = line;
 
 		/* left part is to the left of the field separator */
-		while ( (line[i] != SEP_FIELD) && (line[i] != '\0') && (line[i] != '\n'))
+		while ( (line[i] != SEP_FIELD) && (line[i] != '\0') && (line[i] != '\n')) {
 			++i;
+		}
 		left->l = i;
 
-		if ( line[i] == '\0' || line[i] == '\n' )
-			{
+		if ( line[i] == '\0' || line[i] == '\n' ) {
 			/* end of line */
 #ifdef DEBUG
 			fprintf (debug_fs, "left: <nope>\n");
 #endif
 			return TYPE_LEFT;
-			}
+		}
 
 #ifdef DEBUG
 		fprintf (debug_fs, "left: %s, ", sprintf_string(left));
 #endif
-		}
+	}
 
-	if ( line[i] == SEP_FIELD )
+	if ( line[i] == SEP_FIELD ) {
 		right->s = line+i+1;
-	else
+	} else {
 		/* no left part present */
 		right->s = line;
+	}
 
 	/* right part is to the left of the entry separator */
-	while ( (line[i] != SEP_ENTRY) && (line[i] != '\0') && (line[i] != '\n'))
+	while ( (line[i] != SEP_ENTRY) && (line[i] != '\0') && (line[i] != '\n')) {
 		++i;
+	}
 	right->l = (line+i) - right->s;
 
-	if ( line[i] == '\0' || line[i] == '\n' )
-		{
+	if ( line[i] == '\0' || line[i] == '\n' ) {
 		/* end of line */
 #ifdef DEBUG
 		fprintf (debug_fs, "right: <nope>\n");
 #endif
 		return TYPE_RIGHT;
-		}
+	}
 
 #ifdef DEBUG
 	fprintf (debug_fs, "right: %s\n", sprintf_string(right));
 #endif
 
-	if ( line[i] == SEP_ENTRY )
-		{
+	if ( line[i] == SEP_ENTRY ) {
 		rem->s = line+i+1;
 		rem->l = strlen(rem->s);
-		}
-	else
-		{
+	} else {
 		rem->s = NULL;
 		rem->l = 0;
-		}
+	}
 
 	return TYPE_FULL;
 }
@@ -3111,11 +3109,10 @@ void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 	(void)unescape_string_t (left, lbuf, MAX_PACKET_ASCII_LENGTH);
 	rlen = unescape_string_t (right, rbuf, MAX_PACKET_ASCII_LENGTH);
 
-	if ( strcasecmp(TEXT_GENERIC_HEADER, lbuf) == 0 )
+	if ( strcasecmp(TEXT_GENERIC_HEADER, lbuf) == 0 ) {
 		cur = txt_get_change_state(cur, rbuf, packet);
-	else
-		switch (cur)
-			{
+	} else {
+		switch (cur) {
 			case HEADER_FILE:
 				txt_get_file_header(lbuf, rbuf, &file_hdr);
 				break;
@@ -3161,7 +3158,8 @@ void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 				fprintf (stderr, "Error [%s]: invalid state in line %i (%s)\n",
 						__func__, line_number, valid_states_s[cur]);
 				exit(-1);
-			}
+		}
+	}
 
 	return;
 }
@@ -3173,30 +3171,27 @@ int txt_get_file_header(char *lbuf, char *rbuf, struct pcap_file_header *hdr)
 	int id;
 	uint32_t uvalue;
 
-	if ( (id = look_for_string(txt_label_file_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_file_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n", __func__,
 				line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
-	if ( getval_string (TYPE_UINT, rbuf, (void *)&uvalue) < 0 )
-		{
+	if ( getval_string (TYPE_UINT, rbuf, (void *)&uvalue) < 0 ) {
 		/* invalid state */
 		fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 				__func__, txt_label_file_header[id], line_number, valid_states_s[cur]);
 		exit(-1);
-		}
+	}
 
 #ifdef DEBUG
 	fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			little_endian = uvalue; break;
 		case 1:
@@ -3213,7 +3208,7 @@ int txt_get_file_header(char *lbuf, char *rbuf, struct pcap_file_header *hdr)
 			hdr->snaplen = htonl(uvalue); break;
 		case 7:
 			hdr->linktype = htonl(uvalue); break;
-		}
+	}
 
 	return 0;
 }
@@ -3230,65 +3225,60 @@ int txt_get_frame(char *lbuf, char *rbuf, packet_t *packet)
 		uint32_t u2;
 	} tuvalue;
 
-	if ( (id = look_for_string(txt_label_frame, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_frame, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n", __func__,
 				line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
-	switch (id)
-		{
+	switch (id) {
 		case 1: /* time is a two-int */
-			if ( getval_string (TYPE_TWOUINTS, rbuf, (void *)&tuvalue) < 0 )
-				{
+			if ( getval_string (TYPE_TWOUINTS, rbuf, (void *)&tuvalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_frame[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value %u.%u\n", __func__, lbuf, tuvalue.u1, tuvalue.u2);
 #endif
 			break;
 
 		default:
-			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
-				{
+			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_frame[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 			break;
-		}
+	}
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: packet %i --------\n", __func__, uvalue);
 #endif
 			packet->index = htonl(uvalue); break;
 		case 1:
-				{
-				packet->frame.ts.tv_sec = htonl(tuvalue.u1);
-				packet->frame.ts.tv_usec = htonl(tuvalue.u2);
-				break;
-				}
+			{
+			packet->frame.ts.tv_sec = htonl(tuvalue.u1);
+			packet->frame.ts.tv_usec = htonl(tuvalue.u2);
+			break;
+			}
 		case 2:
 			packet->frame.caplen = htonl(uvalue); break;
 		case 3:
 			packet->frame.len = htonl(uvalue); break;
-		}
+	}
 
 	/* mark the packet as valid */
 	packet->valid = 1;
@@ -3306,28 +3296,27 @@ int txt_get_l2(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the l2 header, if necessary */
-	if ( packet->l2 == NULL )
+	if ( packet->l2 == NULL ) {
 		packet->l2 = packet->buffer;
+	}
 
-	if ( (id = look_for_string(txt_label_l2_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_l2_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy((void *)packet->l2, (void *)svalue, rlen);
 			packet->l2_hlen = rlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3342,64 +3331,58 @@ int txt_get_ethernet(char *lbuf, char *rbuf, packet_t *packet)
 	struct ether_header *eth;
 
 	/* point the l2 header, if necessary */
-	if ( packet->l2 == NULL )
-		{
+	if ( packet->l2 == NULL ) {
 		packet->l2 = packet->buffer;
 		packet->l2_hlen = ETH_HLEN;
-		}
+	}
 	eth = (struct ether_header *)packet->l2;
 
-	if ( (id = look_for_string(txt_label_ethernet_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_ethernet_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
-	switch (id)
-		{
+	switch (id) {
 		case 0: /* address is ETHADDR */
 		case 1: /* address is ETHADDR */
-			if ( getval_string (TYPE_ETHADDR, rbuf, (void *)&eavalue) < 0 )
-				{
+			if ( getval_string (TYPE_ETHADDR, rbuf, (void *)&eavalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ethernet_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, ether_ntoa(&eavalue));
 #endif
 			break;
 
 		default:
-			if ( getval_string (TYPE_UINT, rbuf, (void *)&uvalue) < 0 )
-				{
+			if ( getval_string (TYPE_UINT, rbuf, (void *)&uvalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ethernet_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 			break;
-		}
+	}
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy(eth->ether_dhost, (void *)&eavalue, sizeof(struct ether_addr)); break;
 		case 1:
 			memcpy(eth->ether_shost, (void *)&eavalue, sizeof(struct ether_addr)); break;
 		case 2:
 			eth->ether_type = htons((short)uvalue); break;
-		}
+	}
 
 	return 0;
 }
@@ -3413,28 +3396,27 @@ int txt_get_l3(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the l3 header, if necessary */
-	if ( packet->l3 == NULL )
+	if ( packet->l3 == NULL ) {
 		packet->l3 = packet->buffer + packet->l2_hlen;
+	}
 
-	if ( (id = look_for_string(txt_label_l3_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_l3_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy((void *)packet->l3, (void *)svalue, rlen);
 			packet->l3_len = packet->l3_hlen = rlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3450,38 +3432,34 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	uint32_t uvalue;
 
 	/* point the l3 header, if necessary */
-	if ( packet->ip == NULL )
-		{
+	if ( packet->ip == NULL ) {
 		packet->ip = (struct ip *)(packet->buffer + packet->l2_hlen);
 		/* this is ip */
 		/*  ZZZ there should be a better way to get l3_proto from the L2 header */
 		packet->l3_proto = ETH_P_IP;
 		/* IP length is at least this */
 		packet->l3_hlen = sizeof(struct ip);
-		}
+	}
 
-	if ( (id = look_for_string(txt_label_ip_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_ip_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	res = 0;
-	switch (id)
-		{
+	switch (id) {
 		case 12: /* address is IPADDR */
 		case 13: /* address is IPADDR */
-			if ( getval_string (TYPE_IPADDR, rbuf, (void *)&iavalue) < 0 )
-				{
+			if ( getval_string (TYPE_IPADDR, rbuf, (void *)&iavalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ip_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, inet_ntoa(iavalue));
 #endif
@@ -3492,45 +3470,51 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			break;
 
 		default:
-			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
-				{
+			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ip_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 			break;
-		}
+	}
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
-			packet->ip->ip_v = (uint8_t)uvalue; break;
+			packet->ip->ip_v = (uint8_t)uvalue;
+			break;
 		case 1:
 			packet->ip->ip_hl = (uint8_t)uvalue;
 			break;
 		case 2:
-			packet->ip->ip_tos = (uint8_t)uvalue; break;
+			packet->ip->ip_tos = (uint8_t)uvalue;
+			break;
 		case 3:
 			packet->ip->ip_len = htons((uint16_t)uvalue);
 			break;
 		case 4:
-			packet->ip->ip_id = htons((uint16_t)uvalue); break;
+			packet->ip->ip_id = htons((uint16_t)uvalue);
+			break;
 		case 5:
-			packet->ip->ip_off = uvalue<<15; break;
+			packet->ip->ip_off = uvalue<<15;
+			break;
 		case 6:
-			packet->ip->ip_off |= uvalue<<14; break;
+			packet->ip->ip_off |= uvalue<<14;
+			break;
 		case 7:
-			packet->ip->ip_off |= uvalue<<13; break;
+			packet->ip->ip_off |= uvalue<<13;
+			break;
 		case 8:
-			packet->ip->ip_off = htons(packet->ip->ip_off | (((uint16_t)uvalue)&0x1fff)); break;
+			packet->ip->ip_off = htons(packet->ip->ip_off | (((uint16_t)uvalue)&0x1fff));
+			break;
 		case 9:
-			packet->ip->ip_ttl = (uint8_t)uvalue; break;
+			packet->ip->ip_ttl = (uint8_t)uvalue;
+			break;
 		case 10:
 			packet->ip->ip_p = (uint8_t)uvalue;
 			packet->l4_proto = (int)packet->ip->ip_p;
@@ -3540,9 +3524,11 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			packet->ip_sum_valid = res;
 			break;
 		case 12:
-			memcpy((void *)&(packet->ip->ip_src), (void *)&iavalue, sizeof(struct in_addr)); break;
+			memcpy((void *)&(packet->ip->ip_src), (void *)&iavalue, sizeof(struct in_addr));
+			break;
 		case 13:
-			memcpy((void *)&(packet->ip->ip_dst), (void *)&iavalue, sizeof(struct in_addr)); break;
+			memcpy((void *)&(packet->ip->ip_dst), (void *)&iavalue, sizeof(struct in_addr));
+			break;
 		case 14:
 			packet->ip_opts = packet->buffer + packet->l2_hlen + sizeof(struct ip);
 			memcpy((void *)packet->ip_opts, (void *)svalue, rlen);
@@ -3550,7 +3536,7 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			/* add options to the IP header length */
 			packet->l3_hlen += packet->ip_optlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3566,76 +3552,75 @@ int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	uint32_t uvalue;
 
 	/* point the l3 header, if necessary */
-	if ( packet->ip6 == NULL )
-		{
+	if ( packet->ip6 == NULL ) {
 		packet->ip6 = (struct ip6_hdr *)(packet->buffer + packet->l2_hlen);
 		/* this is ipv6 */
 		/*  ZZZ there should be a better way to get l3_proto from the L2 header */
 		packet->l3_proto = ETH_P_IPV6;
 		/* IP length is at least this */
 		packet->l3_hlen = sizeof(struct ip6_hdr);
-		}
+	}
 
-	if ( (id = look_for_string(txt_label_ip6_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_ip6_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	res = 0;
-	switch (id)
-		{
+	switch (id) {
 		case 4: /* address is IPADDR6 */
 		case 5: /* address is IPADDR6 */
-			if ( getval_string (TYPE_IPADDR6, rbuf, (void *)&iavalue) < 0 )
-				{
+			if ( getval_string (TYPE_IPADDR6, rbuf, (void *)&iavalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ip6_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, inet_ntoa(iavalue));
 #endif
 			break;
 
 		default:
-			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
-				{
+			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_ip6_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 			break;
-		}
+	}
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			packet->ip6->ip6_flow = htonl((uint32_t)uvalue);
+			break;
 		case 1:
-			packet->ip6->ip6_plen = htons((uint16_t)uvalue); break;
+			packet->ip6->ip6_plen = htons((uint16_t)uvalue);
+			break;
 		case 2:
 			packet->ip6->ip6_nxt = (uint8_t)uvalue;
 			packet->l4_proto = (int)packet->ip6->ip6_nxt;
 			break;
 		case 3:
-			packet->ip6->ip6_hops = (uint8_t)uvalue; break;
+			packet->ip6->ip6_hops = (uint8_t)uvalue;
+			break;
 		case 4:
-			memcpy((void *)&(packet->ip6->ip6_src), (void *)&iavalue, sizeof(struct in6_addr)); break;
+			memcpy((void *)&(packet->ip6->ip6_src), (void *)&iavalue, sizeof(struct in6_addr));
+			break;
 		case 5:
-			memcpy((void *)&(packet->ip6->ip6_dst), (void *)&iavalue, sizeof(struct in6_addr)); break;
-		}
+			memcpy((void *)&(packet->ip6->ip6_dst), (void *)&iavalue, sizeof(struct in6_addr));
+			break;
+	}
 
 	return 0;
 }
@@ -3649,29 +3634,28 @@ int txt_get_l4(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the l4 header, if necessary */
-	if ( packet->l4 == NULL )
+	if ( packet->l4 == NULL ) {
 		packet->l4 = packet->buffer + packet->l2_hlen + packet->l3_hlen;
+	}
 
-	if ( (id = look_for_string(txt_label_l4_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_l4_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
 	packet->l4_proto = -1;
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy((void *)packet->l4, (void *)svalue, rlen);
 			packet->l4_len = packet->l4_hlen = rlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3686,34 +3670,30 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the tcp header, if necessary */
-	if ( packet->tcp == NULL )
-		{
+	if ( packet->tcp == NULL ) {
 		packet->tcp = (struct tcphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
 		/* TCP length is at least this */
 		packet->l4_hlen = sizeof(struct tcphdr);
-		}
+	}
 
-	if ( (id = look_for_string(txt_label_tcp_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_tcp_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
-	switch (id)
-		{
+	switch (id) {
 		case 6: /* tcp flags */
-			if ( getval_string (TYPE_TCPFLAGS, rbuf, (void *)&uvalue) < 0 )
-				{
+			if ( getval_string (TYPE_TCPFLAGS, rbuf, (void *)&uvalue) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_tcp_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value %i\n", __func__, lbuf, uvalue);
 #endif
@@ -3724,47 +3704,53 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			break;
 
 		default:
-			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
-				{
+			if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 ) {
 				/* invalid value */
 				fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 						__func__, txt_label_tcp_header[id], line_number,
 						valid_states_s[cur]);
 				exit(-1);
-				}
+			}
 #ifdef DEBUG
 			fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
 #endif
 			break;
-		}
+	}
 
 	/* put value */
 	packet->l4_proto = IPPROTO_TCP;
-	switch (id)
-		{
+	switch (id) {
 		case 0:
-			packet->tcp->th_sport = htons((uint16_t)uvalue); break;
+			packet->tcp->th_sport = htons((uint16_t)uvalue);
+			break;
 		case 1:
-			packet->tcp->th_dport = htons((uint16_t)uvalue); break;
+			packet->tcp->th_dport = htons((uint16_t)uvalue);
+			break;
 		case 2:
-			packet->tcp->th_seq = htonl(uvalue); break;
+			packet->tcp->th_seq = htonl(uvalue);
+			break;
 		case 3:
-			packet->tcp->th_ack = htonl(uvalue); break;
+			packet->tcp->th_ack = htonl(uvalue);
+			break;
 		case 4:
 			packet->tcp->th_off = (uint8_t)uvalue;
 			break;
 		case 5:
-			packet->tcp->th_x2 = (uint8_t)uvalue; break;
+			packet->tcp->th_x2 = (uint8_t)uvalue;
+			break;
 		case 6:
-			packet->tcp->th_flags = (uint8_t)uvalue; break;
+			packet->tcp->th_flags = (uint8_t)uvalue;
+			break;
 		case 7:
-			packet->tcp->th_win = htons((uint16_t)uvalue); break;
+			packet->tcp->th_win = htons((uint16_t)uvalue);
+			break;
 		case 8:
 			packet->tcp->th_sum = htons((uint16_t)uvalue);
 			packet->tcp_sum_valid = res;
 			break;
 		case 9:
-			packet->tcp->th_urp = htons((uint16_t)uvalue); break;
+			packet->tcp->th_urp = htons((uint16_t)uvalue);
+			break;
 		case 10:
 			packet->tcp_opts = packet->buffer + packet->l2_hlen + packet->l3_hlen +
 					sizeof(struct tcphdr);
@@ -3773,7 +3759,7 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 			/* add options to the TCP header length */
 			packet->l4_hlen += packet->tcp_optlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3787,30 +3773,27 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 	uint32_t uvalue;
 
 	/* point the udp header, if necessary */
-	if ( packet->udp == NULL )
-		{
+	if ( packet->udp == NULL ) {
 		packet->udp = (struct udphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
 		/* UDP length is exactly this */
 		packet->l4_hlen = sizeof(struct udphdr);
-		}
+	}
 
-	if ( (id = look_for_string(txt_label_udp_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_udp_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
-	if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 )
-		{
+	if ( (res = getval_string (TYPE_UINTEXT, rbuf, (void *)&uvalue)) < 0 ) {
 		/* invalid state */
 		fprintf (stderr, "Error [%s]: invalid %s value in line %i (%s)\n",
 				__func__, txt_label_udp_header[id], line_number, valid_states_s[cur]);
 		exit(-1);
-		}
+	}
 
 #ifdef DEBUG
 	fprintf (debug_fs, "%s: label \"%s\" has value 0x%08x\n", __func__, lbuf, uvalue);
@@ -3818,17 +3801,20 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 
 	/* put value */
 	packet->l4_proto = IPPROTO_UDP;
-	switch (id)
-		{
+	switch (id) {
 		case 0:
-			packet->udp->uh_sport = htons((uint16_t)uvalue); break;
+			packet->udp->uh_sport = htons((uint16_t)uvalue);
+			break;
 		case 1:
-			packet->udp->uh_dport = htons((uint16_t)uvalue); break;
+			packet->udp->uh_dport = htons((uint16_t)uvalue);
+			break;
 		case 2:
-			packet->udp->uh_ulen = htons((uint16_t)uvalue); break;
+			packet->udp->uh_ulen = htons((uint16_t)uvalue);
+			break;
 		case 3:
-			packet->udp->uh_sum = htons((uint16_t)uvalue); break;
-		}
+			packet->udp->uh_sum = htons((uint16_t)uvalue);
+			break;
+	}
 
 	return 0;
 }
@@ -3839,9 +3825,10 @@ int txt_get_icmp(char *lbuf, char *rbuf, packet_t *packet)
 {
 	/* point the icmp header, if necessary */
 	packet->l4_proto = IPPROTO_ICMP;
-	if ( packet->icmp == NULL )
+	if ( packet->icmp == NULL ) {
 		packet->icmp = (struct icmphdr *)(packet->buffer + packet->l2_hlen +
 				packet->l3_hlen);
+	}
 
 	return 0;
 }
@@ -3854,29 +3841,28 @@ int txt_get_l7(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the l7 header, if necessary */
-	if ( packet->l7 == NULL )
+	if ( packet->l7 == NULL ) {
 		packet->l7 = packet->buffer + packet->l2_hlen + packet->l3_hlen + 
 				packet->l4_hlen;
+	}
 
-	if ( (id = look_for_string(txt_label_l7_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_l7_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy((void *)packet->l7, (void *)svalue, rlen);
 			packet->l7_len = rlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3889,29 +3875,28 @@ int txt_get_rem(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 	char *svalue;
 
 	/* point the l7 header, if necessary */
-	if ( packet->rem == NULL )
+	if ( packet->rem == NULL ) {
 		packet->rem = packet->buffer + packet->l2_hlen + packet->l3_hlen + 
 				packet->l4_hlen + packet->l7_len;
+	}
 
-	if ( (id = look_for_string(txt_label_rem_header, lbuf)) < 0 )
-		{
+	if ( (id = look_for_string(txt_label_rem_header, lbuf)) < 0 ) {
 		/* invalid label */
 		fprintf (stderr, "Error [%s]: invalid label in line %i (%s)\n",
 				__func__, line_number, lbuf);
 		exit(-1);
-		}
+	}
 
 	/* get value */
 	(void)getval_string (TYPE_STRING, rbuf, (void *)&svalue);
 
 	/* put value */
-	switch (id)
-		{
+	switch (id) {
 		case 0:
 			memcpy((void *)packet->rem, (void *)svalue, rlen);
 			packet->rem_len = rlen;
 			break;
-		}
+	}
 
 	return 0;
 }
@@ -3986,13 +3971,16 @@ uint16_t ip_checksum(uint8_t *ip_hdr)
 	ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
 
 	/* make 16 bit words out of every two adjacent bytes, and add them up */
-	for (i = 0; i < ip_hlen; i = i + 2)
-		if (i != 10)
+	for (i = 0; i < ip_hlen; i = i + 2) {
+		if (i != 10) {
 			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
+		}
+	}
 
 	/* take only 16 bits out of the 32 bit sum and add up the carries */
-	while ((sum >> 16) != 0)
+	while ((sum >> 16) != 0) {
 		sum = (sum & 0xffff) + (sum >> 16);
+	}
 
 	/* one's complement the result */
 	cksum = (uint16_t)(~sum & 0xffff);
@@ -4029,23 +4017,20 @@ uint16_t tcp_checksum(uint8_t *ip_hdr)
 	ip_v = ((*(ip_hdr)) & 0xf0)>>4;
 
 	/* get IP header length and total length */
-	if ( ip_v == 4 )
-		{
+	if ( ip_v == 4 ) {
 		ip_hlen = ((*(ip_hdr)) & 0x0f)<<2;
 		ip_len = ntohs(*(uint16_t *)(ip_hdr+2));
-		}
-	else if ( ip_v == 6 )
-		{
+
+	} else if ( ip_v == 6 ) {
 		/* get IP header length */
 		uint16_t ip_plen = 0;
 		ip_plen = ntohs(*(uint16_t *)(ip_hdr+4));
 		ip_hlen = sizeof(struct ip6_hdr);
 		ip_len = ip_plen - ip_hlen;
-		}
+	}
 
 	/* add TCP pseudo header */
-	if ( ip_v == 4 )
-		{
+	if ( ip_v == 4 ) {
 		/* source address */
 		sum += (uint32_t)*(uint16_t *)(ip_hdr+12);
 		sum += (uint32_t)*(uint16_t *)(ip_hdr+14);
@@ -4056,32 +4041,37 @@ uint16_t tcp_checksum(uint8_t *ip_hdr)
 		sum += (uint32_t)(*(uint8_t *)(ip_hdr+9))<<8;
 		/* TCP length */
 		sum += (uint32_t)htons((ntohs(*(uint16_t *)(ip_hdr+2)) - ip_hlen));
-		}
-	else if ( ip_v == 6 )
-		{
+
+	} else if ( ip_v == 6 ) {
 		/* src/dst address */
-		for (i = 8; i < ip_hlen; i = i + 2)
+		for (i = 8; i < ip_hlen; i = i + 2) {
 			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
+		}
 
 		/* payload length */
 		sum += (uint32_t)*(uint16_t *)(ip_hdr+4);
 
 		/* next header length */
 		sum += (uint32_t)*(uint8_t *)(ip_hdr+6);
-		}
+	}
 
 	/* make 16 bit words out of every two adjacent TCP bytes, and add them up */
-	for (i = ip_hlen; i < (ip_len-1); i = i + 2)
-		if (i != (unsigned int)(ip_hlen + 16)) /* exclude TCP checksum */
+	for (i = ip_hlen; i < (ip_len-1); i = i + 2) {
+		/* exclude TCP checksum */
+		if (i != (unsigned int)(ip_hlen + 16)) {
 			sum += (uint32_t)*(uint16_t *)(ip_hdr+i);
+		}
+	}
 
-	if ( ip_len%2 == 1 )
+	if ( ip_len%2 == 1 ) {
 		/* even length => add the last byte */
 		sum += (uint32_t)((*(uint16_t *)(ip_hdr+i)) & htons(0xff00));
+	}
 
 	/* take only 16 bits out of the 32 bit sum and add up the carries */
-	while ((sum >> 16) != 0)
+	while ((sum >> 16) != 0) {
 		sum = (sum & 0xffff) + (sum >> 16);
+	}
 
 	/* one's complement the result */
 	cksum = (uint16_t)(~sum & 0xffff);
@@ -4099,17 +4089,17 @@ int do_fwrite(FILE *fp, uint8_t *buf, int len)
 {
 	int ret;
 
-	if ( vim_mode )
-		{
+	if ( vim_mode ) {
 		/* store last two chars */
 		if ( len > 0 ) last_char[0] = buf[len-1];
 		if ( len > 1 ) last_char[1] = buf[len-2];
-		}
+	}
 
 	ret = ( ((int)fwrite (buf, 1, len, fp) == len) ? 0 : -1 );
 
-	if ( immediate_mode )
+	if ( immediate_mode ) {
 		fflush(fp);
+	}
 
 	return ret;
 }
@@ -4118,9 +4108,10 @@ int do_fwrite(FILE *fp, uint8_t *buf, int len)
 
 void string_append(string_t *str, string_t *post)
 {
-	if ( (str->l + post->l) > MAX_PACKET_ASCII_LENGTH )
+	if ( (str->l + post->l) > MAX_PACKET_ASCII_LENGTH ) {
 		fprintf(stderr, "Error [%s]: String too big (%i)\n", __func__,
 				MAX_PACKET_ASCII_LENGTH);
+	}
 	memcpy(str->s+str->l, post->s, post->l);
 	str->l += post->l;
 	str->s[str->l] = '\0';
@@ -4143,11 +4134,10 @@ struct timeval timeval_diff (struct timeval *ts2, struct timeval *ts1)
 	struct timeval diff_ts;
 	diff_ts.tv_sec = ts2->tv_sec - ts1->tv_sec;
 	diff_ts.tv_usec = ts2->tv_usec - ts1->tv_usec;
-	while ( diff_ts.tv_usec < 0 )
-		{
+	while ( diff_ts.tv_usec < 0 ) {
 		diff_ts.tv_sec -= 1;
 		diff_ts.tv_usec += 1000000;
-		}
+	}
 	return diff_ts;
 }
 
@@ -4237,12 +4227,14 @@ uint32_t seq_check(packet_t* packet, int type)
 	result = (uint32_t)VALUE_OK;
 
 	/* ensure seq table is enabled */
-	if ( seq_table_enabled == 0 )
+	if ( seq_table_enabled == 0 ) {
 		return result;
+	}
 
 	/* ZZZ we don't support IPv6 seq tables (yet) */
-	if ( packet->l3_proto == ETH_P_IPV6 )
+	if ( packet->l3_proto == ETH_P_IPV6 ) {
 		return result;
+	}
 
 	/* build conn */
 	conn.saddr = (type == SEQ) ? ntohl(packet->ip->ip_src.s_addr) :
@@ -4257,16 +4249,17 @@ uint32_t seq_check(packet_t* packet, int type)
 
 	/* look up connection in the hash table */
 	item = ht_raw_lookup(ht, (void*)&conn, NULL);
-	if ( item != NULL )
+	if ( item != NULL ) {
 		result = *(uint32_t *)item->yield;
+	}
 
 	/* get new seq/ack value */
-	if ( type == SEQ )
-		{
+	if ( type == SEQ ) {
 		new = ntohl(packet->tcp->th_seq);
-		if ( new == (uint32_t)VALUE_OK )
+		if ( new == (uint32_t)VALUE_OK ) {
 			/* OK value => use the older one */
 			new = result;
+		}
 
 		/* add the L4 contents length in the wire */
 		ip_hlen = packet->ip->ip_hl<<2;
@@ -4276,24 +4269,26 @@ uint32_t seq_check(packet_t* packet, int type)
 		 * one sequence number. None of the other flags (URG, RST, PSH, ACK)
 		 * occupy any space [RFC 793, Glossary]
 		 */
-		if ( ((packet->tcp->th_flags>>1)&0x1) != 0 ) /* SYN */
-			++new;
-		if ( ((packet->tcp->th_flags>>0)&0x1) != 0 ) /* FIN */
+		if ( ((packet->tcp->th_flags>>1)&0x1) != 0 ) {  /* SYN */
 			++new;
 		}
-	else
-		{
+		if ( ((packet->tcp->th_flags>>0)&0x1) != 0 ) {  /* FIN */
+			++new;
+		}
+	} else {
 		new = ntohl(packet->tcp->th_ack);
-		if ( new == (uint32_t)VALUE_OK )
+		if ( new == (uint32_t)VALUE_OK ) {
 			/* OK value => use the older one */
 			new = result;
 		}
+	}
 
 	/* add new values to the table */
-	if ( item != NULL )
+	if ( item != NULL ) {
 		*(uint32_t *)item->yield = new;
-	else
+	} else {
 		(void)ht_raw_insert(ht, (void*)&conn, (void*)&new);
+	}
 
 	return result;
 }
@@ -4308,8 +4303,7 @@ uint32_t seq_check(packet_t* packet, int type)
  */
 int pcaptxt_get_linklen (int datalink)
 {
-	switch (datalink)
-	{
+	switch (datalink) {
 		case DLT_RAW:
 			/* raw IP (no link layer) */
 			return 0;
