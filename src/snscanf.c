@@ -1,36 +1,4 @@
 /*
- * Copyright (c) 2007, Jose Maria Gonzalez (chema@cs.berkeley.edu)
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the.
- *       distribution
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS ``AS 
- * IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
- * HOLDER AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-/* $Id$ */
-
-/*
  *  linux/lib/vsprintf.c
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
@@ -61,7 +29,7 @@
  * @endp: A pointer to the end of the parsed string will be placed here
  * @base: The number base to use
  */
-unsigned long simple_strntoul(const char *cp,size_t size,char **endp,unsigned int base)
+unsigned long simple_strntoul(const char *cp, size_t size,char **endp,unsigned int base)
 {
 	const char *orig_cp = cp;
 	unsigned long result = 0,value;
@@ -80,7 +48,7 @@ unsigned long simple_strntoul(const char *cp,size_t size,char **endp,unsigned in
 		if (cp[0] == '0' && toupper(cp[1]) == 'X')
 			cp += 2;
 	}
-	while (isxdigit(*cp) && (cp-orig_cp < size) &&
+	while (isxdigit(*cp) && ((cp - orig_cp) < size) &&
 			(value = isdigit(*cp) ? *cp-'0' : toupper(*cp)-'A'+10) < base) {
 		result = result*base + value;
 		cp++;
@@ -189,7 +157,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 	int field_width;
 	int is_sign = 0;
 
-	while(*fmt && *str && (str-buf < size)) {
+	while(*fmt && *str && ((str - buf) < size)) {
 		/* skip any white space in format */
 		/* white space in format matchs any amount of
 		 * white space, including none, in the input.
@@ -200,7 +168,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 			while (isspace(*str))
 				++str;
 		}
-		if (str-buf >= size) break;
+		if ((str - buf) >= size) break;
 
 		/* anything that is not a conversion must match exactly */
 		if (*fmt != '%' && *fmt) {
@@ -208,7 +176,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 				break;
 			continue;
 		}
-		if (str-buf >= size) break;
+		if ((str - buf) >= size) break;
 
 		if (!*fmt)
 			break;
@@ -224,7 +192,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 				str++;
 			continue;
 		}
-		if (str-buf >= size) break;
+		if ((str - buf) >= size) break;
 
 		/* get field width */
 		field_width = -1;
@@ -260,7 +228,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 				field_width = 1;
 			do {
 				*s++ = *str++;
-			} while (--field_width > 0 && *str && (str-buf < size));
+			} while (--field_width > 0 && *str && ((str - buf) < size));
 			num++;
 		}
 		continue;
@@ -272,10 +240,10 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 			/* first, skip leading white space in buffer */
 			while (isspace(*str))
 				str++;
-			if (str-buf >= size) break;
+			if ((str - buf) >= size) break;
 
 			/* now copy until next white space */
-			while (*str && !isspace(*str) && field_width-- && (str-buf < size)) {
+			while (*str && !isspace(*str) && field_width-- && ((str - buf) < size)) {
 				*s++ = *str++;
 			}
 			*s = '\0';
@@ -298,13 +266,15 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 			break;
 		case 'i':
 			base = 0;
+			/* fall through */
 		case 'd':
 			is_sign = 1;
+			/* fall through */
 		case 'u':
 			break;
 		case '%':
 			/* looking for '%' in str */
-			if (*str++ != '%') 
+			if (*str++ != '%')
 				return num;
 			continue;
 		default:
@@ -317,7 +287,7 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 		 */
 		while (isspace(*str))
 			str++;
-		if (str-buf >= size) break;
+		if ((str - buf) >= size) break;
 
 		digit = *str;
 		if (is_sign && digit == '-')
@@ -334,53 +304,53 @@ int vsnscanf(const char * buf, size_t size, const char * fmt, va_list args)
 		case 'H':	/* that's 'hh' in format */
 			if (is_sign) {
 				signed char *s = (signed char *) va_arg(args,signed char *);
-				*s = (signed char) simple_strntol(str, size-(str-buf),&next,base);
+				*s = (signed char) simple_strntol(str, size - (str - buf),&next,base);
 			} else {
 				unsigned char *s = (unsigned char *) va_arg(args, unsigned char *);
-				*s = (unsigned char) simple_strntoul(str, size-(str-buf), &next, base);
+				*s = (unsigned char) simple_strntoul(str, size - (str - buf), &next, base);
 			}
 			break;
 		case 'h':
 			if (is_sign) {
 				short *s = (short *) va_arg(args,short *);
-				*s = (short) simple_strntol(str, size-(str-buf),&next,base);
+				*s = (short) simple_strntol(str, size - (str - buf),&next,base);
 			} else {
 				unsigned short *s = (unsigned short *) va_arg(args, unsigned short *);
-				*s = (unsigned short) simple_strntoul(str, size-(str-buf), &next, base);
+				*s = (unsigned short) simple_strntoul(str, size - (str - buf), &next, base);
 			}
 			break;
 		case 'l':
 			if (is_sign) {
 				long *l = (long *) va_arg(args,long *);
-				*l = simple_strntol(str, size-(str-buf),&next,base);
+				*l = simple_strntol(str, size - (str - buf),&next,base);
 			} else {
 				unsigned long *l = (unsigned long*) va_arg(args,unsigned long*);
-				*l = simple_strntoul(str, size-(str-buf),&next,base);
+				*l = simple_strntoul(str, size - (str - buf),&next,base);
 			}
 			break;
 		case 'L':
 			if (is_sign) {
 				long long *l = (long long*) va_arg(args,long long *);
-				*l = simple_strntoll(str, size-(str-buf),&next,base);
+				*l = simple_strntoll(str, size - (str - buf),&next,base);
 			} else {
 				unsigned long long *l = (unsigned long long*) va_arg(args,unsigned long long*);
-				*l = simple_strntoull(str, size-(str-buf),&next,base);
+				*l = simple_strntoull(str, size - (str - buf),&next,base);
 			}
 			break;
 		case 'Z':
 		case 'z':
 		{
 			size_t *s = (size_t*) va_arg(args,size_t*);
-			*s = (size_t) simple_strntoul(str, size-(str-buf),&next,base);
+			*s = (size_t) simple_strntoul(str, size - (str - buf),&next,base);
 		}
 		break;
 		default:
 			if (is_sign) {
 				int *i = (int *) va_arg(args, int*);
-				*i = (int) simple_strntol(str, size-(str-buf),&next,base);
+				*i = (int) simple_strntol(str, size - (str - buf),&next,base);
 			} else {
 				unsigned int *i = (unsigned int*) va_arg(args, unsigned int*);
-				*i = (unsigned int) simple_strntoul(str, size-(str-buf),&next,base);
+				*i = (unsigned int) simple_strntoul(str, size - (str - buf),&next,base);
 			}
 			break;
 		}
