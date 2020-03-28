@@ -65,13 +65,11 @@
  */
 
 
-
 /*
  * \todo Add a (forced) little endian mode for ascii->pcap conversions, so 
  *       that ascii->pcap conversions can be forced in big- or little-endian
  *       format (so far we use the little_endian field to decide)
  */
-
 
 
 /*
@@ -214,7 +212,6 @@
 #endif
 
 
-
 #include "snscanf.h"
 #include "getline.h"
 #include "hash.h"
@@ -227,7 +224,6 @@
 #define DEFAULT_SEQ_TABLE_ENABLED 1
 #define DEFAULT_SEQ_TABLE_SIZE 1024
 #define DEFAULT_DIFF_MODE 0
-
 
 
 #ifndef TCPDUMP_MAGIC
@@ -365,7 +361,6 @@ typedef struct
 	uint8_t *rem;
 	uint32_t rem_len;
 } packet_t;
-
 
 
 #define KEYWORD_OK "ok"
@@ -552,7 +547,6 @@ char *txt_label_rem_header[] =
 };
 
 
-
 /* common packet objects */
 int packet_pending_packet = 0;
 int little_endian;
@@ -577,10 +571,7 @@ typedef enum
 
 int line_state;
 
-
-
 extern char version[];
-
 
 
 /* main functions */
@@ -623,7 +614,6 @@ int pcap_put_icmp (char *buf, packet_t *packet);
 int pcap_put_l7 (char *buf, packet_t *packet);
 int pcap_put_rem (char *buf, packet_t *packet);
 
-
 /* text functions */
 char *sprintf_string(string_t *str);
 int getxvalue(char c);
@@ -635,7 +625,6 @@ char *escape_string (unsigned char *pkt, int len);
 int unescape_string (char *sin, int sinlen, char* buf, int buflen);
 int unescape_string_t (string_t *sin, char* buf, int buflen);
 int getval_string (type_t type, char *str, void *value);
-
 
 /* text put functions */
 int txt_put_packet(FILE *fp, packet_t* packet);
@@ -673,14 +662,13 @@ int txt_get_icmp(char *lbuf, char *rbuf, packet_t *packet);
 int txt_get_l7(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 int txt_get_rem(char *lbuf, char *rbuf, int rlen, packet_t *packet);
 
-
+/* checksum functions */
 uint16_t ip_checksum(uint8_t *ip_hdr);
 uint16_t tcp_checksum(uint8_t *ip_hdr);
 
 /* error function */
 void pcaptxt_error (int code, char *str, ...);
 static char* my_strerror(int errnum);
-
 
 /* other functions */
 int do_fwrite(FILE *fp, uint8_t *buf, int len);
@@ -712,7 +700,6 @@ int pcaptxt_get_linklen (int datalink);
  * XXX -q 256 means size the seq# processing table [default 1024]
  * XXX -Q means disable seq# processing
  */
-
 
 
 /**
@@ -749,7 +736,6 @@ int main (int argc, char **argv)
 }
 
 
-
 /**
  * \brief Usage printf
  * 
@@ -780,8 +766,6 @@ void usage()
 	fprintf(stderr, "\t-h\t\tthis help\n");
 	exit(1);
 }
-
-
 
 
 /**
@@ -935,7 +919,6 @@ int parse_args (int argc, char **argv)
 }
 
 
-
 void pcap_to_ascii(char *in_file, char *out_file)
 {
 	packet_t *packet;
@@ -1000,7 +983,6 @@ void pcap_to_ascii(char *in_file, char *out_file)
 
 	return;
 }
-
 
 
 void ascii_to_pcap(char *in_file, char *out_file)
@@ -1166,7 +1148,6 @@ void ascii_to_pcap(char *in_file, char *out_file)
 }
 
 
-
 /* error functions */
 void pcaptxt_error (int code, char *str, ...)
 {
@@ -1183,8 +1164,6 @@ void pcaptxt_error (int code, char *str, ...)
 
 	return;
 }
-
-
 
 
 /**
@@ -1206,7 +1185,6 @@ static char* my_strerror(int errnum)
 	return errnum_buf;
 #endif
 }
-
 
 
 /**
@@ -1309,9 +1287,6 @@ void pcap_get_packet (uint8_t *user, const struct pcap_pkthdr *chdr,
 }
 
 
-
-
-
 /**
  * \brief Get a pcap file header
  *
@@ -1411,7 +1386,6 @@ int pcap_get_file_header(char *filename, struct pcap_file_header *hdr)
 }
 
 
-
 int pcap_get_frame (const struct pcap_pkthdr *hdr, packet_t* packet)
 {
 	int caplen;
@@ -1435,7 +1409,6 @@ int pcap_get_frame (const struct pcap_pkthdr *hdr, packet_t* packet)
 
 	return 0;
 }
-
 
 
 /**
@@ -1486,7 +1459,6 @@ int pcap_get_l2(packet_t *packet)
 }
 
 
-
 /* don't know how to dump this L3: assume remaining is L3 */
 int pcap_get_l3(packet_t *packet)
 {
@@ -1505,7 +1477,6 @@ int pcap_get_l3(packet_t *packet)
 
 	return 0;
 }
-
 
 
 int pcap_get_ip (packet_t* packet)
@@ -1602,7 +1573,6 @@ int pcap_get_ip (packet_t* packet)
 }
 
 
-
 int pcap_get_ip6(packet_t *packet)
 {
 	/* point IPv6 header pointer */
@@ -1627,7 +1597,6 @@ int pcap_get_ip6(packet_t *packet)
 }
 
 
-
 int pcap_get_l4(packet_t *packet)
 {
 	/* point L4 header pointer */
@@ -1641,7 +1610,6 @@ int pcap_get_l4(packet_t *packet)
 
 	return 0;
 }
-
 
 
 int pcap_get_tcp (packet_t* packet)
@@ -1704,7 +1672,6 @@ int pcap_get_tcp (packet_t* packet)
 }
 
 
-
 int pcap_get_udp (packet_t* packet)
 {
 	/* point UDP header pointer */
@@ -1723,7 +1690,6 @@ int pcap_get_udp (packet_t* packet)
 
 	return 0;
 }
-
 
 
 int pcap_get_icmp (packet_t* packet)
@@ -1748,7 +1714,6 @@ int pcap_get_icmp (packet_t* packet)
 }
 
 
-
 int pcap_get_l7 (packet_t* packet)
 {
 	/* point L7 header pointer */
@@ -1760,7 +1725,6 @@ int pcap_get_l7 (packet_t* packet)
 
 	return 0;
 }
-
 
 
 int pcap_get_rem (packet_t* packet)
@@ -1780,7 +1744,6 @@ int pcap_get_rem (packet_t* packet)
 }
 
 
-
 /* text helper functions */
 
 char *sprintf_string(string_t *str)
@@ -1792,7 +1755,6 @@ char *sprintf_string(string_t *str)
 }
 
 
-
 int getxvalue(char c)
 {
 	if ( isdigit(c) ) {
@@ -1801,7 +1763,6 @@ int getxvalue(char c)
 		return (10 + tolower(c) - 'a');
 	}
 }
-
 
 
 int look_for_string(char **haystack, char *needle)
@@ -1820,7 +1781,6 @@ int look_for_string(char **haystack, char *needle)
 
 	return i;
 }
-
 
 
 #if !defined(HAVE_INET_NTOA)
@@ -1842,14 +1802,12 @@ char *inet_ntoa(struct in_addr in)
 #endif
 
 
-
 char *addr_to_string (uint32_t addr)
 {
 	struct in_addr a;
 	a.s_addr = addr; /* inet_ntoa wants network order */
 	return inet_ntoa(a);
 }
-
 
 
 char* dump_ethaddr (uint8_t *addr)
@@ -1860,8 +1818,6 @@ char* dump_ethaddr (uint8_t *addr)
 			(int)*(addr+3), (int)*(addr+4), (int)*(addr+5));
 	return buffer;
 }
-
-
 
 
 /**
@@ -1890,7 +1846,6 @@ char *encode_string (unsigned char *pkt, int len)
 	buf[bi++] = '\0';
 	return buf;
 }
-
 
 
 /**
@@ -1940,12 +1895,10 @@ char *escape_string (unsigned char *pkt, int len)
 }
 
 
-
 int unescape_string_t (string_t *sin, char* buf, int buflen)
 {
 	return unescape_string (sin->s, sin->l, buf, buflen);
 }
-
 
 
 /**
@@ -2006,8 +1959,6 @@ int unescape_string (char *sin, int sinlen, char* buf, int buflen)
 
 	return bi;
 }
-
-
 
 
 /**
@@ -2159,7 +2110,6 @@ int getval_string (type_t type, char *str, void *value)
 }
 
 
-
 /* text put functions */
 
 int txt_put_packet(FILE *fp, packet_t* packet)
@@ -2233,7 +2183,6 @@ int txt_put_packet(FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_file_header(FILE *fp, struct pcap_file_header *hdr)
 {
 	txt_put_string(fp, "%s%c %s, ", TEXT_GENERIC_HEADER, SEP_FIELD,
@@ -2259,8 +2208,6 @@ int txt_put_file_header(FILE *fp, struct pcap_file_header *hdr)
 
 	return 0;
 }
-
-
 
 
 /**
@@ -2305,7 +2252,6 @@ int txt_put_frame(FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_l2 (FILE *fp, packet_t* packet)
 {
 	txt_put_string(fp, "  %s%c l2, ", TEXT_GENERIC_HEADER, SEP_FIELD);
@@ -2314,7 +2260,6 @@ int txt_put_l2 (FILE *fp, packet_t* packet)
 
 	return 0;
 }
-
 
 
 int txt_put_ethernet (FILE *fp, packet_t* packet)
@@ -2334,7 +2279,6 @@ int txt_put_ethernet (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_l3 (FILE *fp, packet_t* packet)
 {
 	txt_put_string(fp, "  %s%c l3, ", TEXT_GENERIC_HEADER, SEP_FIELD);
@@ -2343,7 +2287,6 @@ int txt_put_l3 (FILE *fp, packet_t* packet)
 
 	return 0;
 }
-
 
 
 int txt_put_ip (FILE *fp, packet_t* packet)
@@ -2403,7 +2346,6 @@ int txt_put_ip (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_ip6 (FILE *fp, packet_t* packet)
 {
 	char buf[INET6_ADDRSTRLEN];
@@ -2441,7 +2383,6 @@ int txt_put_ip6 (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_l4 (FILE *fp, packet_t* packet)
 {
 	txt_put_string(fp, "  %s%c l4, ", TEXT_GENERIC_HEADER, SEP_FIELD);
@@ -2450,7 +2391,6 @@ int txt_put_l4 (FILE *fp, packet_t* packet)
 
 	return 0;
 }
-
 
 
 int txt_put_tcp (FILE *fp, packet_t* packet)
@@ -2521,7 +2461,6 @@ int txt_put_tcp (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_udp (FILE *fp, packet_t* packet)
 {
 	txt_put_string(fp, "  %s%c udp, ", TEXT_GENERIC_HEADER, SEP_FIELD);
@@ -2539,7 +2478,6 @@ int txt_put_udp (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_icmp (FILE *fp, packet_t* packet)
 {
 	/* not yet */
@@ -2548,7 +2486,6 @@ int txt_put_icmp (FILE *fp, packet_t* packet)
 	txt_put_string(fp, "[%s NOT YET]\n", __func__);
 	return 0;
 }
-
 
 
 int txt_put_l7 (FILE *fp, packet_t* packet)
@@ -2560,7 +2497,6 @@ int txt_put_l7 (FILE *fp, packet_t* packet)
 }
 
 
-
 int txt_put_rem (FILE *fp, packet_t* packet)
 {
 	txt_put_string(fp, "  %s%c rem, ", TEXT_GENERIC_HEADER, SEP_FIELD);
@@ -2568,7 +2504,6 @@ int txt_put_rem (FILE *fp, packet_t* packet)
 			escape_string (packet->rem, packet->rem_len));
 	return 0;
 }
-
 
 
 void txt_put_string (FILE *fp, char *str, ...)
@@ -2582,7 +2517,6 @@ void txt_put_string (FILE *fp, char *str, ...)
 
 	return;
 }
-
 
 
 /* pcap put functions */
@@ -2607,7 +2541,6 @@ int pcap_put_file_header (FILE *fp, struct pcap_file_header *hdr)
 	len = sizeof(struct pcap_file_header);
 	return do_fwrite (fp, (uint8_t *)hdr, len);
 }
-
 
 
 void pcap_put_packet(packet_t* packet, FILE *fp)
@@ -2674,7 +2607,6 @@ void pcap_put_packet(packet_t* packet, FILE *fp)
 	/* reset packet contents */
 	packet_reset(packet);
 }
-
 
 
 /**
@@ -2792,7 +2724,6 @@ void pcap_postprocess_packet(char *buffer, packet_t* packet)
 }
 
 
-
 int pcap_put_frame (char *buf, packet_t *packet)
 {
 	struct pcaptxt_pkthdr *frame = &packet->frame;
@@ -2819,7 +2750,6 @@ int pcap_put_frame (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_l2 (char *buf, packet_t *packet)
 {
 	if ( packet->l2_hlen > 0 ) {
@@ -2829,7 +2759,6 @@ int pcap_put_l2 (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_l3 (char *buf, packet_t *packet)
 {
 	if ( packet->l3_hlen > 0 ) {
@@ -2837,7 +2766,6 @@ int pcap_put_l3 (char *buf, packet_t *packet)
 	}
 	return packet->l3_hlen;
 }
-
 
 
 int pcap_put_ip (char *buf, packet_t *packet)
@@ -2863,7 +2791,6 @@ int pcap_put_ip (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_ip6 (char *buf, packet_t *packet)
 {
 	int len;
@@ -2882,7 +2809,6 @@ int pcap_put_ip6 (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_l4 (char *buf, packet_t *packet)
 {
 	if ( packet->l4_hlen > 0 ) {
@@ -2890,7 +2816,6 @@ int pcap_put_l4 (char *buf, packet_t *packet)
 	}
 	return packet->l4_hlen;
 }
-
 
 
 int pcap_put_tcp (char *buf, packet_t *packet)
@@ -2910,7 +2835,6 @@ int pcap_put_tcp (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_udp (char *buf, packet_t *packet)
 {
 	/* dump udp header */
@@ -2919,14 +2843,12 @@ int pcap_put_udp (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_icmp (char *buf, packet_t *packet)
 {
 	/* dump icmp header */
 	memcpy(buf, (uint8_t *)(packet->icmp), sizeof(struct icmphdr));
 	return sizeof(struct icmphdr);
 }
-
 
 
 int pcap_put_l7 (char *buf, packet_t *packet)
@@ -2939,7 +2861,6 @@ int pcap_put_l7 (char *buf, packet_t *packet)
 }
 
 
-
 int pcap_put_rem (char *buf, packet_t *packet)
 {
 	/* dump rem header */
@@ -2948,7 +2869,6 @@ int pcap_put_rem (char *buf, packet_t *packet)
 	}
 	return packet->rem_len;
 }
-
 
 
 /* text get functions */
@@ -3019,7 +2939,6 @@ int txt_get_change_state(int cur, char *buf, packet_t* packet)
 
 	return next;
 }
-
 
 
 int txt_get_pair(char *line, int state, string_t *left, string_t *right,
@@ -3099,7 +3018,6 @@ int txt_get_pair(char *line, int state, string_t *left, string_t *right,
 }
 
 
-
 void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 {
 	char lbuf[MAX_PACKET_ASCII_LENGTH];
@@ -3165,7 +3083,6 @@ void txt_get_dispatch(string_t *left, string_t *right, packet_t* packet)
 }
 
 
-
 int txt_get_file_header(char *lbuf, char *rbuf, struct pcap_file_header *hdr)
 {
 	int id;
@@ -3212,7 +3129,6 @@ int txt_get_file_header(char *lbuf, char *rbuf, struct pcap_file_header *hdr)
 
 	return 0;
 }
-
 
 
 int txt_get_frame(char *lbuf, char *rbuf, packet_t *packet)
@@ -3287,8 +3203,6 @@ int txt_get_frame(char *lbuf, char *rbuf, packet_t *packet)
 }
 
 
-
-
 int txt_get_l2(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 {
 	int id;
@@ -3320,7 +3234,6 @@ int txt_get_l2(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 
 	return 0;
 }
-
 
 
 int txt_get_ethernet(char *lbuf, char *rbuf, packet_t *packet)
@@ -3388,7 +3301,6 @@ int txt_get_ethernet(char *lbuf, char *rbuf, packet_t *packet)
 }
 
 
-
 int txt_get_l3(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 {
 	int id;
@@ -3420,7 +3332,6 @@ int txt_get_l3(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 
 	return 0;
 }
-
 
 
 int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
@@ -3542,7 +3453,6 @@ int txt_get_ip(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 }
 
 
-
 int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 {
 	int id;
@@ -3581,7 +3491,7 @@ int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 				exit(-1);
 			}
 #ifdef DEBUG
-			fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, inet_ntoa(iavalue));
+			//fprintf (debug_fs, "%s: label \"%s\" has value %s\n", __func__, lbuf, inet_ntoa(iavalue));
 #endif
 			break;
 
@@ -3626,7 +3536,6 @@ int txt_get_ip6(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 }
 
 
-
 int txt_get_l4(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 {
 	int id;
@@ -3659,7 +3568,6 @@ int txt_get_l4(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 
 	return 0;
 }
-
 
 
 int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
@@ -3765,7 +3673,6 @@ int txt_get_tcp(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 }
 
 
-
 int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 {
 	int id;
@@ -3820,7 +3727,6 @@ int txt_get_udp(char *lbuf, char *rbuf, packet_t *packet)
 }
 
 
-
 int txt_get_icmp(char *lbuf, char *rbuf, packet_t *packet)
 {
 	/* point the icmp header, if necessary */
@@ -3832,7 +3738,6 @@ int txt_get_icmp(char *lbuf, char *rbuf, packet_t *packet)
 
 	return 0;
 }
-
 
 
 int txt_get_l7(char *lbuf, char *rbuf, int rlen, packet_t *packet)
@@ -3868,7 +3773,6 @@ int txt_get_l7(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 }
 
 
-
 int txt_get_rem(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 {
 	int id;
@@ -3900,7 +3804,6 @@ int txt_get_rem(char *lbuf, char *rbuf, int rlen, packet_t *packet)
 
 	return 0;
 }
-
 
 
 #if defined(__FreeBSD__)
@@ -3948,7 +3851,6 @@ struct pcap
 #endif
 
 
-
 /**
  * \brief Get IP checksum
  *
@@ -3987,7 +3889,6 @@ uint16_t ip_checksum(uint8_t *ip_hdr)
 
 	return cksum;
 }
-
 
 
 /**
@@ -4080,9 +3981,6 @@ uint16_t tcp_checksum(uint8_t *ip_hdr)
 }
 
 
-
-
-
 /* helper functions */
 
 int do_fwrite(FILE *fp, uint8_t *buf, int len)
@@ -4105,7 +4003,6 @@ int do_fwrite(FILE *fp, uint8_t *buf, int len)
 }
 
 
-
 void string_append(string_t *str, string_t *post)
 {
 	if ( (str->l + post->l) > MAX_PACKET_ASCII_LENGTH ) {
@@ -4119,13 +4016,11 @@ void string_append(string_t *str, string_t *post)
 }
 
 
-
 void string_reset(string_t *str)
 {
 	str->s[0] = '\0';
 	str->l = 0;
 }
-
 
 
 /* substract struct timeval's */
@@ -4142,14 +4037,12 @@ struct timeval timeval_diff (struct timeval *ts2, struct timeval *ts1)
 }
 
 
-
 void packet_reset(packet_t *p)
 {
 	/* reset global packet contents */
 	memset(p, 0, sizeof(packet_t));
 	p->valid = 0;
 }
-
 
 
 /*
@@ -4164,15 +4057,12 @@ uint32_t swapl(uint32_t x)
 }
 
 
-
 uint16_t swaps(uint16_t x)
 {
 	uint32_t out =
 			((((x) >> 8) & 0xff) | (((x) & 0xff) << 8));
 	return out;
-
 }
-
 
 
 int seq_init(int len)
@@ -4180,7 +4070,6 @@ int seq_init(int len)
 	uint32_t nbuckets;
 	float max_bucket_occupancy_ratio;
 	int copy_keys, copy_yields;
-
 
 	/* init hash table */
 	hf = hf_lcg_init();
@@ -4196,15 +4085,11 @@ int seq_init(int len)
 }
 
 
-
 void seq_fini()
 {
 	/* clean up the hash table */
 	ht_raw_destroy(ht);
 }
-
-
-
 
 
 /**
@@ -4292,7 +4177,6 @@ uint32_t seq_check(packet_t* packet, int type)
 
 	return result;
 }
-
 
 
 /**
